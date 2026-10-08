@@ -60,6 +60,7 @@ kbd{font:500 10.5px var(--mono);opacity:.6;margin-left:4px}
 #savepop b{display:block;font-weight:600}
 #savepop{max-height:calc(100vh - 70px);overflow-y:auto}
 #saveInfo{display:flex;flex-direction:column;gap:10px}
+.stage.boot>*{visibility:hidden} .stage.boot::before{content:"Loading the map\2026";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px}
 #savefile{position:relative} #savefile.dirty::after{content:"";position:absolute;top:-4px;right:-4px;width:10px;height:10px;border-radius:50%;background:#e2572b;border:2px solid var(--panel)}
 #saveInfo div.due b{color:var(--warn)}
 #ask{position:fixed;inset:0;z-index:60;background:rgba(8,14,12,.55);display:flex;align-items:center;justify-content:center;padding:16px}
@@ -305,7 +306,7 @@ button.ib:hover{color:var(--ink);border-color:transparent;background:var(--tint)
       <input id="inl" type="text" aria-label="Name" placeholder="Type the label" hidden>
       <div id="status" role="status" aria-live="polite" hidden></div>
     </div>
-    <div class="foot"><span id="coord">Move the pointer over the map</span><span id="zoomtxt"></span><span id="ver" title="Version of this tool">Build 17 · 8 Oct 2026</span></div>
+    <div class="foot"><span id="coord">Move the pointer over the map</span><span id="zoomtxt"></span><span id="ver" title="Version of this tool">Build 18 · 8 Oct 2026</span></div>
   </div>
 
   <div class="side" id="side">
@@ -1577,7 +1578,7 @@ async function cloudStart(){ if(!(window.claude&&window.claude.use)){ setSave('T
   if(!g.meta){ if(!S.sample) cloudSoon(); else setSave(''); return; }
   cloud.aerial=g.ae; let loc=null; try{ if(!S.sample&&localStorage.getItem(KEY+'_pending')==='1') loc=JSON.parse(JSON.stringify(S)); }catch(_){}
   const o=g.meta.origin, same=loc&&loc.origin&&o&&Math.abs(loc.origin.lon-o.lon)<1e-9&&Math.abs(loc.origin.lat-o.lat)<1e-9;
-  adopt(g); cloud.synced=cloudDocs(); if(same) overlay(loc); ensureLayers(); hist={u:[],r:[],cur:snapEntry(),t:0}; syncInputs(); renderLayers(); renderSel(); flushLocal(); cloudSoon();
+  adopt(g); cloud.synced=cloudDocs(); if(same) overlay(loc); ensureLayers(); hist={u:[],r:[],cur:snapEntry(),t:0}; syncInputs(); renderLayers(); renderSel(); flushLocal(); cloudSoon(); unboot();
   if(g.ae&&!imgs.length) await loadAerial(g.ae); else redraw(); fit(); }
 
 /* ---------- start ---------- */
@@ -1594,10 +1595,11 @@ function sayAction(t,label,fn){ say(t); const b=document.createElement('button')
 async function siteStart(){ let m=null; try{ const r=await fetch('data/site.json',{cache:'no-cache'}); if(r.ok) m=await r.json(); }catch(_){} if(!m||!Array.isArray(m.tiles)) return false; site=m; $('locate').hidden=!navigator.geolocation;
   const had=!S.sample&&S.drawings.length; if(S.sample) dropSample(); if(!S.origin&&m.origin) S.origin=m.origin;
   S.layers=S.layers.filter(l=>!boundLayers().includes(l)); if(m.boundary){ try{ parseGeo(await (await fetch('data/'+m.boundary)).json(),'Property boundary'); }catch(_){} }
-  ensureLayers(); hist={u:[],r:[],cur:snapEntry(),t:0}; syncInputs(); renderLayers(); renderSel(); fit();
+  ensureLayers(); hist={u:[],r:[],cur:snapEntry(),t:0}; syncInputs(); renderLayers(); renderSel(); fit(); unboot();
   await loadAerial({site:true,tiles:m.tiles.map(t=>Object.assign({},t,{url:'data/'+t.file})),elev:m.elev?Object.assign({},m.elev,{url:'data/'+m.elev.file}):null}); fit(); flushLocal();
   if(had) sayAction('Picked up the drawings last worked on in this browser.','Start clean',()=>{ S.drawings=[]; S.dl=[]; S.active=null; sel=null; renderLayers(); renderSel(); persist(); redraw(); });
   return true; }
+function unboot(){ const st=cv.closest('.stage'); if(st.classList.contains('boot')){ st.classList.remove('boot'); redraw(); } }
 function start(){
   let ok=false;
   try{ const j=JSON.parse(localStorage.getItem(KEY)||'null'); if(j&&j.S&&Array.isArray(j.S.layers)&&Array.isArray(j.S.drawings)&&(j.S.sample||j.S.layers.length||j.S.drawings.length)){ S=Object.assign(S,j.S); uid=j.uid||1000; ok=true; { const u=localStorage.getItem(KEY+'_uns'); unsaved=u==null?(S.sample?0:S.drawings.length):(+u||0); } if(S.sample){ if(S.layers.length>=1) sampleImage(); else ok=false; } } }catch(_){}
@@ -1608,7 +1610,8 @@ function start(){
   new ResizeObserver(()=>{ resize(); }).observe(cv);
   if(document.fonts&&document.fonts.ready) document.fonts.ready.then(redraw);
   try{ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',redraw); new MutationObserver(redraw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']}); }catch(_){}
-  siteStart().then(ok=>{ if(!ok) cloudStart(); });
+  if(S.sample&&(window.claude&&window.claude.use||/^https?:$/.test(location.protocol))){ cv.closest('.stage').classList.add('boot'); setTimeout(unboot,12000); }
+  siteStart().then(ok=>ok||cloudStart()).catch(()=>{}).then(unboot);
 }
 start();
 })();
