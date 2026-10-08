@@ -151,6 +151,25 @@ kbd{font:500 10.5px var(--mono);opacity:.6;margin-left:4px}
 .tabs{display:flex;flex-wrap:wrap;position:sticky;top:0;z-index:2;background:var(--panel);border-bottom:1px solid var(--line)}
 .tabs button{flex:1 1 22%;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;padding:8px 2px 6px;color:var(--muted);font-weight:500;font-size:13px}
 .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.ptag{flex:none;font-size:11px;line-height:17px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 7px;margin-left:6px;white-space:nowrap}
+.plist{display:flex;flex-direction:column;gap:8px}
+.prow{border:1px solid var(--line);border-radius:8px;padding:9px 11px;display:flex;flex-direction:column;gap:6px;background:var(--field)}
+.prow .ph{display:flex;align-items:center;gap:8px}
+.prow .ph b{font-weight:600;flex:1;min-width:0;overflow-wrap:anywhere}
+.prow .who{font-size:12px;color:var(--muted);white-space:nowrap}
+.prow .pst{font-size:13px;color:var(--muted)}
+.prow .pst.warn{color:var(--warn)}
+.prow .btnrow,.prev .btnrow{margin-top:2px}
+.prow .btnrow button{font-size:12.5px;padding:4px 10px}
+.prev{border:2px solid var(--accent);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;background:var(--tint)}
+.pub{display:grid;grid-template-columns:minmax(0,1fr) 104px;gap:8px;align-items:center;font-size:13px}
+.pub>b{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.pub label{display:flex;gap:7px;align-items:flex-start;min-width:0}
+.pub label input{margin-top:3px;flex:none}
+.pub small{display:block;color:var(--muted)}
+.dk{font-size:11.5px;font-weight:600}
+.dk.a{color:var(--ok)!important} .dk.c{color:#a86a00!important} .dk.r{color:var(--warn)!important}
+#pl_me{margin-top:4px}
 .tabs button.has::after{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-left:6px;vertical-align:2px}
 .pane{padding:14px 16px 24px;display:flex;flex-direction:column;gap:18px}
 #boundsBox{padding:14px 16px;border-bottom:1px solid var(--line)}
@@ -315,7 +334,7 @@ button.ib:hover{color:var(--ink);border-color:transparent;background:var(--tint)
         </div>
         <div id="draftBtns" hidden><button id="finish" class="primary">Finish</button><button id="cancel">Cancel</button></div>
       </div>
-    <div class="foot"><span id="coord">Move the pointer over the map</span><span id="zoomtxt"></span><span id="ver" title="Version of this tool">Build 20 · 8 Oct 2026</span></div>
+    <div class="foot"><span id="coord">Move the pointer over the map</span><span id="zoomtxt"></span><span id="ver" title="Version of this tool">Build 21 · 8 Oct 2026</span></div>
   </div>
 
   <div class="side" id="side">
@@ -338,6 +357,7 @@ button.ib:hover{color:var(--ink);border-color:transparent;background:var(--tint)
       <button id="tab_sewer" role="tab" aria-selected="false" aria-controls="pane_sewer">Sewer</button>
       <button id="tab_struct" role="tab" aria-selected="false" aria-controls="pane_struct">Structures</button>
       <button id="tab_asb" role="tab" aria-selected="false" aria-controls="pane_asb">As-built</button>
+      <button id="tab_plan" role="tab" aria-selected="false" aria-controls="pane_plan" hidden>Plan</button>
     </div>
     <div id="selWrap" hidden><div class="selhead"><h2>Details</h2><button id="selClose" class="ib" aria-label="Close details and clear the selection" title="Close">×</button></div><div id="sel"></div></div>
 
@@ -383,6 +403,7 @@ button.ib:hover{color:var(--ink);border-color:transparent;background:var(--tint)
       <div><h2>Recorded files</h2><div id="reclist" class="reclist"></div><div class="btnrow"><button id="recOpen">Open a recorded file</button></div></div>
       <div><h2>As-built so far</h2><div id="asbsum"></div></div>
     </div>
+    <div class="pane" id="pane_plan" role="tabpanel" aria-labelledby="tab_plan" hidden><div class="pbody" id="planBody"></div></div>
   </div>
 </div>
 
@@ -425,8 +446,8 @@ const isSysLayer=l=>SYSK.some(k=>SYS[k].name===l.name);
 function newLayer(name){ const L={id:nid('U'),name:name||'Layer '+(S.dl.length+1),color:LCOL[S.dl.length%LCOL.length],visible:true}; S.dl.push(L); if(!S.active) S.active=L.id; return L; }
 function ensureLayers(){ if(!Array.isArray(S.dl)) S.dl=[]; let def=null;
   for(const d of S.drawings){ if(d.type==='measure') continue; if(!S.dl.some(l=>l.id===d.layer)){ def=def||S.dl.find(l=>l.name==='My drawings')||newLayer('My drawings'); d.layer=def.id; } }
-  if(!S.dl.some(l=>l.id===S.active)) S.active=(S.dl.find(l=>!isSysLayer(l))||S.dl[0]||{}).id||null; }
-function activeLayer(){ let L=S.dl.find(l=>l.id===S.active&&!isSysLayer(l)); if(!L){ L=S.dl.find(l=>!isSysLayer(l))||newLayer(); S.active=L.id; } return L; }
+  if(!S.dl.some(l=>l.id===S.active)) S.active=(S.dl.find(l=>!isSysLayer(l)&&!l.ro)||S.dl.find(l=>!isSysLayer(l))||S.dl[0]||{}).id||null; }
+function activeLayer(){ let L=S.dl.find(l=>l.id===S.active&&!isSysLayer(l)); if(!L){ L=S.dl.find(l=>!isSysLayer(l)&&!l.ro)||newLayer(); S.active=L.id; } return L; }
 const dlayer=d=>S.dl.find(l=>l.id===d.layer);
 /* ---------- utility systems: water, power, fence ---------- */
 /* line: [key, label, short, width, dash, material, colour]   node: [key, label, glyph, group, fields, role]   field: [key, label, 'n' | 't' | [options], unit to total] */
@@ -702,13 +723,13 @@ function buildSysPanes(){ for(const sys of SYSK){ const C=SYS[sys], btn=n=>'<but
     else $('body_'+sys).innerHTML=bar+(sys==='power'?'<p class="hint" id="strip_power"></p>':'')
       +'<div><h2>'+C.lineHead+'</h2><div class="pal">'+C.lines.map(l=>'<button data-sys="'+sys+'" data-line="'+l[0]+'" aria-pressed="false"><span class="ln" style="background:'+(l[6]||C.color)+';height:'+Math.round(sizeW({sys,size:l[0]}))+'px"></span>'+esc(l[1])+'</button>').join('')+'</div><p class="hint" style="margin-top:8px">'+esc(C.tip)+'</p></div>'
       +groups(n=>!C.more[n[0]],'')+(rest?'<details class="more"><summary>More fittings and parts</summary>'+rest+'</details>':'')+'<div><h2 id="sumh_'+sys+'">Summary</h2><div id="sum_'+sys+'"></div></div>';
-    $('pane_'+sys).addEventListener('click',e=>{ const t=e.target.closest('[data-st]'); if(t){ const L=sysLayer(sys); if(t.dataset.st==='vis') L.visible=!L.visible; else L.locked=!L.locked; if(sel&&sel.d&&!dvis(selDrawing()||{})) sel=null; renderLayers(); renderSel(); persist(); return redraw(); }
+    $('pane_'+sys).addEventListener('click',e=>{ const t=e.target.closest('[data-st]'); if(t){ const L=sysLayer(sys); if(t.dataset.st==='vis') L.visible=!L.visible; else { if(L.ro) return say(ROMSG); L.locked=!L.locked; } if(sel&&sel.d&&!dvis(selDrawing()||{})) sel=null; renderLayers(); renderSel(); persist(); return redraw(); }
       { const go=e.target.closest('[data-go]'); if(go){ const d=S.drawings.find(x=>x.id===go.dataset.go); if(!d) return; const p=shapePts(d); let cx=0, cy=0; p.forEach(q=>{ cx+=q[0]; cy+=q[1]; }); view.cx=cx/p.length; view.cy=cy/p.length; if(view.s<ZS(100)) view.s=ZS(100); if(S.show.hs) delete S.show.hs[stOf(d)]; const L=sysLayer('struct'); L.visible=true; sel={d:d.id}; multi=[]; renderSel(); renderLayers(); return redraw(); } }
-      if(e.target.id==='mkStruct'){ const d=selDrawing(); if(!d||locked(d)) return; if(d.sys==='struct'){ delete d.sys; const L=activeLayer(); d.layer=L.id; d.color=L.color; } else { const L=sysLayer('struct'); d.sys='struct'; d.layer=L.id; if(!d.status) d.status=S.lastSt||'existing'; if(!L.visible) L.visible=true; } renderSel(); renderLayers(); persist(); return redraw(); }
+      if(e.target.id==='mkStruct'){ const d=selDrawing(); if(!d||locked(d)) return; if(d.sys!=='struct'&&sysLayer('struct').ro) return say(ROMSG); if(d.sys==='struct'&&isLk(activeLayer())) return say(LOCKMSG); if(d.sys==='struct'){ delete d.sys; const L=activeLayer(); d.layer=L.id; d.color=L.color; } else { const L=sysLayer('struct'); d.sys='struct'; d.layer=L.id; if(!d.status) d.status=S.lastSt||'existing'; if(!L.visible) L.visible=true; } renderSel(); renderLayers(); persist(); return redraw(); }
       const b=e.target.closest('[data-sys]'); if(!b) return; if(b.getAttribute('aria-pressed')==='true') return setTool('pan');
       if(b.dataset.shape) setTool('draw',b.dataset.shape==='poly'?'poly':'node',{sys,shape:b.dataset.shape}); else if(b.dataset.line) setTool('draw','line',{sys,size:b.dataset.line}); else setTool('draw','node',{sys,kind:b.dataset.node}); }); } }
 function renderSys(){ for(const sys of SYSK){ const C=SYS[sys], pane=$('pane_'+sys); if(!$('body_'+sys).firstChild) return;
-    { const L=S.dl.find(l=>l.name===C.name), v=pane.querySelector('[data-st=vis]'), k=pane.querySelector('[data-st=lock]'); v.setAttribute('aria-pressed',!L||L.visible); v.textContent=!L||L.visible?'Shown on the map':'Hidden'; k.setAttribute('aria-pressed',!!(L&&L.locked)); k.textContent=L&&L.locked?'Locked':'Lock'; }
+    { const L=S.dl.find(l=>l.name===C.name), v=pane.querySelector('[data-st=vis]'), k=pane.querySelector('[data-st=lock]'); v.setAttribute('aria-pressed',!L||L.visible); v.textContent=!L||L.visible?'Shown on the map':'Hidden'; k.setAttribute('aria-pressed',isLk(L)); k.textContent=L&&L.ro?'Agreed plan, read-only':L&&L.locked?'Locked':'Lock'; }
     pane.querySelectorAll('[data-sys]').forEach(b=>b.setAttribute('aria-pressed',!!(preset&&preset.sys===sys&&tool==='draw'&&(b.dataset.shape?preset.shape===b.dataset.shape:b.dataset.line?drawKind==='line'&&preset.size===b.dataset.line:drawKind==='node'&&preset.kind===b.dataset.node))));
     if(sys==='water'){ const ht=S.drawings.some(d=>d.type==='node'&&d.sys==='water'&&d.kind==='tank'&&feeds(d)); $('tank').closest('label').hidden=ht; $('tankHint').hidden=ht; }
     if(pane.hidden) continue;
@@ -749,8 +770,9 @@ function renderSys(){ for(const sys of SYSK){ const C=SYS[sys], pane=$('pane_'+s
     let extra=''; if(sys==='water'&&ds.some(d=>d.type==='line')){ const tk=takeoff(asbV); if(tk.length) extra='<h2 style="margin-top:18px">Joints counted from the drawing</h2><div class="stats" style="margin-top:0">'+tk.map(e=>'<div class="row"><span class="k">'+esc(e[0])+'</span><span class="v">'+e[1]+'</span></div>').join('')+'</div><p class="hint" style="margin-top:10px">Worked out from where pipes meet or change size, using equal tees with reducers on the stubs, and two threaded adapters per inline valve. Couplings for joining coils are not counted.</p>'; }
     $('sum_'+sys).innerHTML=(r.length?'<div class="stats" style="margin-top:0">'+r.join('')+'</div>':'<p class="hint">Nothing placed yet.</p>')+(note?'<p class="hint" style="margin-top:10px">'+esc(note)+'</p>':'')+extra; } }
 const dvis=d=>{ if(d.type==='measure') return S.show.meas; if(!phaseOn(d)) return false; if(d.sys&&S.show.hs&&S.show.hs[stOf(d)]) return false; if(d.date&&((S.df&&d.date<S.df)||(S.dt&&d.date>S.dt))) return false; return (dlayer(d)||{visible:true}).visible; };
-const locked=d=>!!(d&&d.type!=='measure'&&(dlayer(d)||{}).locked);
-const LOCKMSG='That layer is locked. Unlock it in the layer list to change it.';
+const isLk=L=>!!(L&&(L.locked||L.ro));
+const locked=d=>!!(d&&d.type!=='measure'&&(d.pl||isLk(dlayer(d))));
+const LOCKMSG='That is read-only. Its layer is locked, or it belongs to the agreed plan. Unlock it in the layer list, or open the Plan tab to work on that layer.', ROMSG='This layer shows the agreed plan and is read-only here. Open the Plan tab and choose Work on it to make your own draft.';
 function polyArea(p){ let a=0; for(let i=0;i<p.length;i++){ const q=p[(i+1)%p.length]; a+=p[i][0]*q[1]-q[0]*p[i][1]; } return Math.abs(a)/2; }
 function pathLen(p,closed){ let t=0; for(let i=1;i<p.length;i++) t+=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]); if(closed&&p.length>1) t+=Math.hypot(p[0][0]-p[p.length-1][0],p[0][1]-p[p.length-1][1]); return t; }
 function pathMid(p){ let h=pathLen(p)/2; for(let i=1;i<p.length;i++){ const L=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]); if(L>0&&h<=L){ const t=h/L; return [p[i-1][0]+t*(p[i][0]-p[i-1][0]),p[i-1][1]+t*(p[i][1]-p[i-1][1])]; } h-=L; } return p[0]; }
@@ -956,6 +978,7 @@ function draw(){
       if(f.type==='polygon'&&(view.s>3.4||on||showAll())&&f.name){ let cx=0,cy=0; f.coords.forEach(q=>{cx+=q[0];cy+=q[1];}); label(f.name,X(cx/f.coords.length),Y(cy/f.coords.length),null,on); }
       if(f.type==='point'){ const x=X(f.coords[0][0]), y=Y(f.coords[0][1]); ctx.beginPath(); ctx.rect(x-5,y-5,10,10); ctx.fillStyle=on?'#fff36b':'#ffffff'; ctx.fill(); ctx.lineWidth=2.5; ctx.strokeStyle=L.color; ctx.stroke(); ctx.lineWidth=1; ctx.strokeStyle='#08110f'; ctx.strokeRect(x-6.5,y-6.5,13,13); if(hov&&hov.f===f&&!on){ ctx.lineWidth=2.5; ctx.strokeStyle='rgba(255,255,255,.85)'; ctx.strokeRect(x-9.5,y-9.5,19,19); } if((view.s>4.5||on||showAll()||(hov&&hov.f===f))&&f.name) label(f.name,x,y+18,null,on); }
     } }
+  drawCmp();
   const sysNodes=[];
   for(const d of S.drawings){ const on=sel&&sel.d===d.id, hv=!on&&hov&&hov.d===d.id;
     if(d.type==='measure'){ if(S.show.meas){ if(hv) glow(d.pts); if(on){ trace(d.pts); ctx.strokeStyle='rgba(255,243,107,.9)'; ctx.lineWidth=9; ctx.stroke(); } drawMeasure(d.pts,false,d.closed); } continue; }
@@ -1116,9 +1139,9 @@ function boxSelect(x0,y0,x1,y1){ const a=Math.min(x0,x1), b=Math.min(y0,y1), c=M
   setMulti(ids); say(ids.length>1?ids.length+' items selected.':ids.length?'':'Nothing in that box.'); }
 function deleteMulti(){ const ids=multi.filter(id=>{ const d=S.drawings.find(x=>x.id===id); return d&&!locked(d); }), skipped=multi.length-ids.length; if(!ids.length) return say(LOCKMSG);
   S.drawings=S.drawings.filter(d=>!ids.includes(d.id)); multi=[]; sel=null; renderSel(); renderLayers(); persist(); redraw(); say('Deleted '+ids.length+' items. '+MOD+'Z brings them back.'+(skipped?' '+skipped+' on locked layers were left.':'')); }
-function moveMulti(L){ let n=0; for(const id of multi){ const d=S.drawings.find(x=>x.id===id); if(d&&d.type!=='measure'&&!d.sys&&!locked(d)){ d.layer=L.id; d.color=L.color; n++; } } renderLayers(); renderSel(); persist(); redraw(); say(n?'Moved '+n+(n===1?' item':' items')+' to the layer '+L.name+'.':'Pipes, power, fence, sewer and structures stay in their own system, so nothing was moved.'); }
+function moveMulti(L){ if(isLk(L)) return say(LOCKMSG); let n=0; for(const id of multi){ const d=S.drawings.find(x=>x.id===id); if(d&&d.type!=='measure'&&!d.sys&&!locked(d)){ d.layer=L.id; d.color=L.color; n++; } } renderLayers(); renderSel(); persist(); redraw(); say(n?'Moved '+n+(n===1?' item':' items')+' to the layer '+L.name+'.':'Pipes, power, fence, sewer and structures stay in their own system, so nothing was moved.'); }
 function click(p,shift){ const w=toW(p), m=mode();
-  if(m!=='pan'&&m!=='measure'&&drawLayer().locked) return say('The layer '+drawLayer().name+' is locked. Unlock it or choose another layer before drawing.');
+  if(m!=='pan'&&m!=='measure'){ const DL=!preset&&/^(poly|circle|line)$/.test(m)&&$('tab_struct').getAttribute('aria-selected')==='true'?sysLayer('struct'):drawLayer(); if(DL.ro) return say(DL.name+' shows the agreed plan and is read-only here. Open the Plan tab and choose Work on it'+(isSysLayer(DL)?'':', or add a layer of your own in the Layers tab')+'.'); if(DL.locked) return say('The layer '+DL.name+' is locked. Unlock it or choose another layer before drawing.'); }
   if(m==='node'){ if(!preset) return setTool('pan'); if(preset.shape==='rect') return addSys({type:'rect',sys:'struct',name:'',cx:w[0],cy:w[1],w:20/FT,l:30/FT,rot:0}); const nd=SYS[preset.sys].nodes.find(n=>n[0]===preset.kind); let q; if(nd&&nd[5]==='gate'){ if(!draft.g||!draft.pts.length){ let best=null; for(const L of fenceLines()){ const k=stationOf(L.pts,w); if(k.d<18/view.s&&(!best||k.d<best.d)) best={L:L.id,t0:k.t,d:k.d}; } if(!best) return say('A gate goes on a fence line. Click on the fence where the gate starts.'); draft.g=best; draft.pts=[w]; return redraw(); }
       const gp=gatePreview(w); if(!gp) return; return addSys({type:'node',sys:'fence',kind:'gate',gw:gp.ft,pts:[gp.mid]}); } else q=findSnap(w)||w; return addSys({type:'node',sys:preset.sys,kind:preset.kind,pts:[q]}); }
   if(m==='pan'){ const d=hitDrawing(w); if(shift&&d){ const cur=multi.length?multi.slice():(sel&&sel.d?[sel.d]:[]), i=cur.indexOf(d.id); if(i>=0) cur.splice(i,1); else cur.push(d.id); return setMulti(cur); } multi=[]; if(d) sel={d:d.id}; else { const h=hitFeature(w); sel=h?{f:h.f,L:h.L}:null; } renderSel(); return redraw(); }
@@ -1198,8 +1221,8 @@ document.addEventListener('keydown',e=>{ const typing=/^(INPUT|SELECT|TEXTAREA)$
 /* ---------- side panel ---------- */
 let sayT=null;
 function say(t){ const el=$('status'); clearTimeout(sayT); el.textContent=t||''; el.hidden=!t; if(t) sayT=setTimeout(()=>{ el.hidden=true; },Math.max(5000,t.length*75)); }
-const TABS=['layers'].concat(SYSK,['asb']);
-function showTab(t){ TABS.forEach(k=>{ $('tab_'+k).setAttribute('aria-selected',k===t); $('pane_'+k).hidden=k!==t; }); renderSys(); renderAsb(); }
+const TABS=['layers'].concat(SYSK,['asb','plan']);
+function showTab(t){ TABS.forEach(k=>{ $('tab_'+k).setAttribute('aria-selected',k===t); $('pane_'+k).hidden=k!==t; }); renderSys(); renderAsb(); if(t==='plan') renderPlan(); }
 TABS.forEach(k=>$('tab_'+k).addEventListener('click',()=>showTab(k)));
 function showDetails(){ $('side').scrollTop=0; if(window.matchMedia('(max-width:760px)').matches) $('side').scrollIntoView({behavior:'smooth',block:'start'}); const n=$('s_name'); if(n) n.focus({preventScroll:true}); }
 $('selClose').addEventListener('click',()=>{ sel=null; multi=[]; renderSel(); redraw(); });
@@ -1213,6 +1236,7 @@ function renderChips(){ const bl=boundLayers(); { const pc=$('phchip'), ph=S.sho
     if(elev&&vis.some(d=>d.sys==='water'&&d.type==='line'&&!isRaw(d))&&TL()>0) L.push('<div class="lg"><b>Pipe pressure</b><span><i style="background:'+SYS.water.color+'"></i>'+PMIN()+' to '+mx+' psi</span><span><i style="background:'+BAND.high+'"></i>Over '+mx+' psi</span><span><i style="background:'+BAND.low+'"></i>Under '+PMIN()+' psi</span><span><i style="background:'+BAND.none+'"></i>Not fed by a tank</span></div>');
     const st=[]; if(has('planned')) st.push('<span><i class="lgd"></i>Planned: dashed</span>'); if(has('construction')) st.push('<span><i style="background:none;box-shadow:0 0 0 2px '+ST_COL.construction+'"></i>Under construction: amber outline</span>'); if(has('remove')) st.push('<span><i style="background:none;box-shadow:0 0 0 2px '+ST_COL.remove+'"></i>To be removed: red outline</span>'); if(vis.some(d=>d.asb)) st.push('<span><i style="background:none;box-shadow:inset 0 0 0 1px #fff,0 0 0 2px #445"></i>As-built record: white centre line</span>');
     if(st.length) L.push('<div class="lg"><b>Status</b>'+st.join('')+(vis.some(d=>d.sys==='struct')?'<em>Structures are coloured by status, as on the chips above.</em>':'')+'</div>'); }
+  if(P.hl&&P.hl.on&&(P.hl.add.size||P.hl.chg.size||P.hl.rem.length)) L.push('<div class="lg"><b>Compared with the agreed plan</b><span><i style="background:#3ddc84"></i>Added</span><span><i style="background:#ffb020"></i>Changed. Dashed line: where it was.</span><span><i style="background:#ff5a4d"></i>Removed</span></div>');
   $('legend').innerHTML=L.join(''); $('legend').hidden=!L.length; }
 $('chips').addEventListener('click',e=>{ const f=e.target.closest('[data-stf]'); if(f){ const hs=S.show.hs=S.show.hs||{}, k=f.dataset.stf; if(hs[k]) delete hs[k]; else hs[k]=true; if(sel&&sel.d&&!dvis(selDrawing()||{})) sel=null; multi=[]; renderChips(); renderSel(); persist(); return redraw(); } const b=e.target.closest('[data-ov]'); if(!b) return; const k=b.dataset.ov; if(k==='bound'){ const bl=boundLayers(), on=!bl.some(l=>l.visible); bl.forEach(l=>{ l.visible=on; }); if(!on&&sel&&sel.L&&bl.includes(sel.L)) sel=null; renderLayers(); renderSel(); persist(); return redraw(); } S.show[k]=!S.show[k]; renderChips(); renderStats(); persist(); redraw(); });
 $('cint').addEventListener('change',e=>{ S.cint=+e.target.value; persist(); redraw(); });
@@ -1221,13 +1245,14 @@ $('emptyImp').addEventListener('click',()=>$('file').click());
 const ICON_UNLOCK='<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="7" width="9" height="6.5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5.5 7V5a2.5 2.5 0 014.9-.8" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
 const ICON_LOCK='<svg viewBox="0 0 12 14" aria-hidden="true"><path d="M3.2 6V4.2a2.8 2.8 0 015.6 0V6H10v7H2V6zm1.5 0h2.6V4.2a1.3 1.3 0 00-2.6 0z" fill="currentColor"/></svg>';
 const EYE0='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z" fill="none" stroke="currentColor" stroke-width="1.4"/>', ICON_EYE=EYE0+'<circle cx="8" cy="8" r="2" fill="currentColor"/></svg>', ICON_EYEOFF=EYE0+'<path d="M2.5 13.5l11-11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+function lockBtn(L,nm){ const on=isLk(L); return '<button class="ib'+(on?' on':'')+'" data-lock="'+L.id+'" aria-pressed="'+on+'" aria-label="'+(L.ro?'Read-only: ':on?'Unlock ':'Lock ')+nm+'" title="'+(L.ro?'Agreed plan, read-only. Open the Plan tab to work on it.':on?'Locked. Click to unlock.':'Lock, so nothing on it can be moved or deleted')+'">'+(on?ICON_LOCK:ICON_UNLOCK); }
 function renderLayers(){ const rows=[];
   const eye0=(id,on,nm)=>'<button class="ib'+(on?'':' on')+'" data-eye="'+id+'" aria-label="'+(on?'Hide ':'Show ')+nm+'" title="'+(on?'Hide':'Hidden. Click to show.')+'">'+(on?ICON_EYE:ICON_EYEOFF)+'</button>';
-  { const sy=S.dl.filter(isSysLayer); if(sy.length){ rows.push('<div class="sub" style="margin-top:0">Systems</div>'); for(const L of sy){ const n=S.drawings.filter(d=>d.layer===L.id).length, nm=esc(L.name); rows.push('<div class="lrow im'+(L.visible?'':' off')+'"><span class="sw" style="background:'+esc(L.color)+'"></span><span class="nm">'+nm+'</span><span class="count">'+n+'</span><span class="acts">'+eye0(L.id,L.visible,nm)+'<button class="ib'+(L.locked?' on':'')+'" data-lock="'+L.id+'" aria-pressed="'+(!!L.locked)+'" aria-label="'+(L.locked?'Unlock ':'Lock ')+nm+'" title="'+(L.locked?'Locked. Click to unlock.':'Lock, so nothing on it can be moved or deleted')+'">'+(L.locked?ICON_LOCK:ICON_UNLOCK)+'</button></span></div>'); } rows.push('<div class="sub">Your layers</div>'); } }
+  { const sy=S.dl.filter(isSysLayer); if(sy.length){ rows.push('<div class="sub" style="margin-top:0">Systems</div>'); for(const L of sy){ const n=S.drawings.filter(d=>d.layer===L.id).length, nm=esc(L.name); rows.push('<div class="lrow im'+(L.visible?'':' off')+'"><span class="sw" style="background:'+esc(L.color)+'"></span><span class="nm">'+nm+'</span>'+planTag(L)+'<span class="count">'+n+'</span><span class="acts">'+eye0(L.id,L.visible,nm)+lockBtn(L,nm)+'</button></span></div>'); } rows.push('<div class="sub">Your layers</div>'); } }
   const eye=(id,on,nm)=>'<button class="ib'+(on?'':' on')+'" data-eye="'+id+'" aria-label="'+(on?'Hide ':'Show ')+nm+'" title="'+(on?'Hide':'Hidden. Click to show.')+'">'+(on?ICON_EYE:ICON_EYEOFF)+'</button>';
   for(const L of S.dl){ if(isSysLayer(L)) continue; const n=S.drawings.filter(d=>d.layer===L.id).length, a=L.id===S.active, nm=esc(L.name);
-    rows.push('<div class="lrow ul'+(a?' active':'')+(L.visible?'':' off')+'" data-l="'+L.id+'"'+(a?' aria-current="true"':'')+' title="'+(a?'New drawings go on this layer':'Click to draw on this layer')+'"><input type="color" id="lc_'+L.id+'" value="'+esc(L.color)+'" aria-label="Colour of '+nm+'" title="Colour"><input type="text" id="ln_'+L.id+'" value="'+nm+'" aria-label="Layer name" title="Click to rename"><span class="count" title="'+n+(n===1?' item':' items')+'">'+n+'</span><span class="acts">'+eye(L.id,L.visible,nm)
-      +'<button class="ib'+(L.locked?' on':'')+'" data-lock="'+L.id+'" aria-pressed="'+(!!L.locked)+'" aria-label="'+(L.locked?'Unlock ':'Lock ')+nm+'" title="'+(L.locked?'Locked. Click to unlock.':'Lock, so nothing on it can be moved or deleted')+'">'+(L.locked?ICON_LOCK:ICON_UNLOCK)+'</button>'
+    rows.push('<div class="lrow ul'+(a?' active':'')+(L.visible?'':' off')+'" data-l="'+L.id+'"'+(a?' aria-current="true"':'')+' title="'+(a?'New drawings go on this layer':'Click to draw on this layer')+'"><input type="color" id="lc_'+L.id+'" value="'+esc(L.color)+'" aria-label="Colour of '+nm+'" title="Colour"><input type="text" id="ln_'+L.id+'" value="'+nm+'" aria-label="Layer name" title="'+(site&&(L.ro||planLayer(L.name))?'A layer in the agreed plan keeps its name':'Click to rename')+'"'+(site&&(L.ro||planLayer(L.name))?' readonly':'')+'>'+planTag(L)+'<span class="count" title="'+n+(n===1?' item':' items')+'">'+n+'</span><span class="acts">'+eye(L.id,L.visible,nm)
+      +lockBtn(L,nm)+'</button>'
       +(armed===L.id?'<button class="quiet on" data-rmu="'+L.id+'">Delete '+n+'?</button>':'<button class="ib" data-rmu="'+L.id+'" aria-label="Remove layer '+nm+'" title="Remove this layer">\u00d7</button>')+'</span></div>'); }
   rows.push('<div class="btnrow" style="margin:6px 0 0"><button id="addLayer">+ Add layer</button></div>'+(S.dl.some(l=>!isSysLayer(l))?'':'<p class="hint" style="margin-top:8px">Add a layer for your own notes, areas and sketches. Pipes, power, fence, sewer and structures have their own tabs.</p>'));
   const IL=S.layers.filter(l=>!boundLayers().includes(l));
@@ -1250,8 +1275,9 @@ $('layers').addEventListener('focusin',e=>{ if(e.target.id.startsWith('ln_')&&S.
 $('layers').addEventListener('click',e=>{ const t=e.target;
   if(t.id==='addLayer'){ const L=newLayer(); S.active=L.id; armed=null; renderLayers(); persist(); const el=$('ln_'+L.id); el.focus(); el.select(); return; }
   const ey=t.closest('[data-eye]'); if(ey){ const id=ey.dataset.eye, L=S.dl.find(l=>l.id===id)||S.layers.find(l=>l.id===id); if(L){ L.visible=!L.visible; armed=null; if(sel&&sel.d&&!dvis(selDrawing()||{})) sel=null; renderLayers(); renderSel(); persist(); redraw(); } return; }
-  const lk=t.closest('[data-lock]'); if(lk){ const L=S.dl.find(l=>l.id===lk.dataset.lock); if(L){ L.locked=!L.locked; armed=null; renderLayers(); renderSel(); persist(); } return; }
-  const ub=t.closest('[data-rmu]'), u=ub&&ub.dataset.rmu; if(u){ const n=S.drawings.filter(d=>d.layer===u).length; if((S.dl.find(l=>l.id===u)||{}).locked) return say(LOCKMSG); if(n&&armed!==u){ armed=u; renderLayers(); return; }
+  const lk=t.closest('[data-lock]'); if(lk){ const L=S.dl.find(l=>l.id===lk.dataset.lock); if(L){ if(L.ro) return say(ROMSG); L.locked=!L.locked; armed=null; renderLayers(); renderSel(); persist(); } return; }
+  const ub=t.closest('[data-rmu]'), u=ub&&ub.dataset.rmu; if(u){ const n=S.drawings.filter(d=>d.layer===u).length; if(isLk(S.dl.find(l=>l.id===u))) return say(LOCKMSG); if(n&&armed!==u){ armed=u; renderLayers(); return; }
+    { const LN=(S.dl.find(l=>l.id===u)||{}).name; if(site&&S.mine&&LN&&S.mine[LN]){ delete S.mine[LN]; setTimeout(planMount,0); } }
     S.drawings=S.drawings.filter(d=>d.layer!==u); S.dl=S.dl.filter(l=>l.id!==u); armed=null; if(S.active===u) S.active=S.dl.length?S.dl[0].id:null; if(sel&&sel.d&&!selDrawing()) sel=null; renderLayers(); renderSel(); persist(); redraw(); return; }
   const rb=t.closest('[data-rm]'), id=rb&&rb.dataset.rm; if(id){ S.layers=S.layers.filter(l=>l.id!==id); if(sel&&sel.L&&sel.L.id===id) sel=null; renderLayers(); renderSel(); persist(); redraw(); return; }
   const r=t.closest('.ul'); if(r&&t.type!=='color'&&S.active!==r.dataset.l) setActive(r.dataset.l); });
@@ -1280,7 +1306,7 @@ function renderSel(){ net={}; if(!selDrawing()) renderSys(); if(S.drawings.some(
   let h='';
   if(d){ const lk=locked(d);
     if(d.type==='measure') h+='<strong>Measurement</strong>';
-    else { if(lk) h+='<p class="hint" style="margin-bottom:8px">This layer is locked. Unlock it in the layer list to make changes.</p>';
+    else { if(lk) h+='<p class="hint" style="margin-bottom:8px">'+(d.pl?esc(planNote(d)):'This layer is locked. Unlock it in the layer list to make changes.')+'</p>';
       h+='<div class="fields"><label class="wide">Name <input id="s_name" type="text" value="'+v(d.name)+'"></label>';
       if(d.type==='rect') h+='<label>Width, ft <input id="s_w" type="number" min="1" step="0.5" value="'+(d.w*FT).toFixed(1)+'"></label><label>Length, ft <input id="s_l" type="number" min="1" step="0.5" value="'+(d.l*FT).toFixed(1)+'"></label><label class="wide">Bearing of the long side, degrees from north <input id="s_rot" type="number" min="0" max="359" step="1" value="'+d.rot+'"></label>';
       if(d.sys&&SYS[d.sys]) h+=sysFields(d,v);
@@ -1288,7 +1314,7 @@ function renderSel(){ net={}; if(!selDrawing()) renderSys(); if(S.drawings.some(
       if(d.type==='circle') h+='<label class="wide">Radius, ft <input id="s_r" type="number" min="0.5" step="0.5" value="'+(d.r*FT).toFixed(1)+'"></label>';
       if(d.type==='line'&&d.sys&&SYS[d.sys]&&d.sys!=='struct') h+='<label>'+(d.sys==='fence'?'Wire or mesh':'Material')+' <input id="s_mat" type="text" value="'+v(d.material)+'"></label>'+(d.sys==='fence'?'<label>Height, ft <input id="s_depth" type="text" inputmode="decimal" value="'+v(d.depth)+'"></label>':d.size==='oh'?'':'<label>Depth to the top, in <input id="s_depth" type="text" inputmode="decimal" value="'+v(d.depth)+'"></label>');
       h+='</div><details class="more" id="selMore"'+(moreOpen?' open':'')+' style="margin-top:10px"><summary>More</summary><div class="fields">';
-      h+=(d.sys?'':'<label>Layer <select id="s_layer">'+S.dl.filter(l=>!isSysLayer(l)||l.id===d.layer).map(l=>'<option value="'+l.id+'"'+(l.id===d.layer?' selected':'')+'>'+esc(l.name)+'</option>').join('')+'</select></label>')+'<label>Date installed or recorded <input id="s_date" type="date" value="'+v(d.date)+'"></label>'+(d.type==='line'&&d.sys==='water'?'<label>Inside diameter, in <input id="s_idin" type="number" step="any" min="0" placeholder="'+(PIPE_ID[d.size]||'')+'" value="'+v(d.idin)+'"></label>':'')+(d.type==='node'&&d.sys==='water'&&roleOf(d)!=='tank'&&!RAWK[d.kind]&&d.kind!=='catch'?'<label class="wide">Height measured from the tank outlet, ft <input id="s_rel" type="number" step="any" placeholder="blank uses the map; below the outlet is negative" value="'+v(d.rel)+'"></label>':'');
+      h+=(d.sys?'':'<label>Layer <select id="s_layer">'+S.dl.filter(l=>(!isSysLayer(l)&&!l.ro)||l.id===d.layer).map(l=>'<option value="'+l.id+'"'+(l.id===d.layer?' selected':'')+'>'+esc(l.name)+'</option>').join('')+'</select></label>')+'<label>Date installed or recorded <input id="s_date" type="date" value="'+v(d.date)+'"></label>'+(d.type==='line'&&d.sys==='water'?'<label>Inside diameter, in <input id="s_idin" type="number" step="any" min="0" placeholder="'+(PIPE_ID[d.size]||'')+'" value="'+v(d.idin)+'"></label>':'')+(d.type==='node'&&d.sys==='water'&&roleOf(d)!=='tank'&&!RAWK[d.kind]&&d.kind!=='catch'?'<label class="wide">Height measured from the tank outlet, ft <input id="s_rel" type="number" step="any" placeholder="blank uses the map; below the outlet is negative" value="'+v(d.rel)+'"></label>':'');
       h+='<label class="wide">Note <input id="s_note" type="text" value="'+v(d.note)+'"></label>';
       if(!d.sys) h+='<label>Colour <input id="s_color" type="color" value="'+(/^#[0-9a-f]{6}$/i.test(d.color||'')?d.color:'#ffffff')+'" style="height:32px;padding:2px"></label>'; if(S.origin&&(d.type==='node'||d.type==='point')){ const ll=toLL(d.pts[0][0],d.pts[0][1]); h+='<p class="hint wide" style="font-family:var(--mono);font-size:12px">'+ll[1].toFixed(7)+', '+ll[0].toFixed(7)+'</p>'; } h+='</div>';
       if((d.photos&&d.photos.length)||assetsCap) h+='<div class="photos">'+(d.photos||[]).map(id=>'<span class="ph"><img src="/_blob/'+esc(id)+'" alt="Photo attached to '+v(d.name)+'" data-ph="'+esc(id)+'" loading="lazy">'+(assetsCap?'<button data-phx="'+esc(id)+'" aria-label="Remove this photo">×</button>':'')+'</span>').join('')+'</div>'+(assetsCap?'<div class="btnrow"><button id="s_addph">Add photo</button><input id="s_phfile" type="file" accept="image/*" hidden></div>':''); h+='</details>'; }
@@ -1352,7 +1378,7 @@ function openMenu(x,y){ const d=selDrawing(), m=$('menu'); let h=''; const it=(a
   else if(d){ const lk=locked(d), L=dlayer(d), off=lk?' disabled':'';
     if(d.type!=='measure'){ h+=it('ren','Rename',off)+it('dup','Duplicate<kbd>'+MOD+'D</kbd>',off); if(d.type==='line') h+=it('cont','Continue drawing from its end',off)+(menuW?it('split','Split it here',off):'');
       const others=lk||d.sys?[]:S.dl.filter(l=>l.id!==d.layer&&!isSysLayer(l)); if(others.length) h+='<div class="mh">Move to layer</div>'+others.map(l=>'<button role="menuitem" data-act="mv" data-l="'+l.id+'"><span class="sw" style="background:'+esc(l.color)+';margin:0"></span>'+esc(l.name)+'</button>').join('');
-      h+='<hr>'; if(L) h+=it('lock',(L.locked?'Unlock the layer ':'Lock the layer ')+esc(L.name)); }
+      h+='<hr>'; if(L&&!L.ro) h+=it('lock',(L.locked?'Unlock the layer ':'Lock the layer ')+esc(L.name)); }
     h+=it('del','Delete<kbd>Del</kbd>',off+' class="danger"'); }
   else if(sel&&sel.f) h+=it('hide','Hide the layer '+esc(sel.L.name));
   else return closeMenu();
@@ -1365,7 +1391,7 @@ $('menu').addEventListener('click',e=>{ const b=e.target.closest('[data-act]'); 
     const c=JSON.parse(JSON.stringify(d)); c.id=nid('D'); delete c.photos; c.pts=B; d.pts=A; S.drawings.push(c); renderSel(); renderLayers(); persist(); redraw(); return say('Split into two lines.'); }
   if(!d) return; if(a==='ren') return openEditor(d,false); if(a==='dup') return dup(); if(a==='del') return removeSel();
   if(a==='mv'){ const L=S.dl.find(l=>l.id===b.dataset.l); if(L){ d.layer=L.id; d.color=L.color; renderLayers(); renderSel(); persist(); redraw(); say('Moved to the layer '+L.name+'.'); } return; }
-  if(a==='lock'){ const L=dlayer(d); if(L){ L.locked=!L.locked; renderLayers(); renderSel(); persist(); redraw(); } } });
+  if(a==='lock'){ const L=dlayer(d); if(L&&!L.ro){ L.locked=!L.locked; renderLayers(); renderSel(); persist(); redraw(); } } });
 $('menu').addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('pointerdown',e=>{ if(!$('menu').hidden&&!e.target.closest('#menu')) closeMenu(); if(!$('savepop').hidden&&!e.target.closest('#savepop,#savest')){ $('savepop').hidden=true; $('savest').setAttribute('aria-expanded','false'); } },true);
 window.addEventListener('blur',closeMenu); window.addEventListener('resize',closeMenu);
@@ -1374,7 +1400,7 @@ $('sel').addEventListener('pointermove',profHover);
 $('sel').addEventListener('pointerleave',()=>{ if(profMark){ profMark=null; redraw(); } });
 $('sel').addEventListener('input',e=>{ const d=selDrawing(); if(!d||locked(d)) return; const v=e.target.value, k={s_size:'size',s_mat:'material',s_depth:'depth',s_date:'date',s_cond:'cond',s_idin:'idin'}[e.target.id]; if(k){ d[k]=v; if(k==='date') renderLayers(); }
   if(e.target.id==='s_set'&&+v>0) d.set=+v; if(e.target.id==='s_wl') d.wl=v===''?null:+v; if(e.target.id==='s_wh') d.wh=v===''?null:+v; if(e.target.id==='s_rel') d.rel=v===''?null:+v; if(e.target.id==='s_run'){ if(e.target.checked&&!(+(d.spec||{}).gpm>0)){ e.target.checked=false; say('Enter a flow in gpm first.'); } else d.run=e.target.checked; } if(e.target.id==='s_closed') d.closed=e.target.checked; if(e.target.id==='s_feeds') d.feeds=e.target.checked; if(e.target.id==='s_tmode'){ setTmode(d,v); net={}; renderSel(); renderLayers(); persist(); return redraw(); } if(e.target.id==='sp_gpm'){ const r=$('s_run'); if(r){ if(+v>0&&d.run===false&&!r.checked){} r.checked=d.run!==false&&+v>0; } } if(e.target.id==='sp_type'){ d.spec=d.spec||{}; d.spec.type=v; renderSel(); renderLayers(); persist(); return redraw(); } if(e.target.id==='s_on') d.on=e.target.checked; if(e.target.id==='s_gw'&&+v>=2) d.gw=+v; if(e.target.id==='s_status'){ d.status=v; if(d.sys==='struct') S.lastSt=v; (S.lastBy=S.lastBy||{})[d.sys]=v; renderChips(); } if(e.target.id==='s_asb'){ d.asb=e.target.checked; if(d.asb) d.status='existing'; net={}; renderSel(); renderLayers(); persist(); return redraw(); } if(e.target.id.startsWith('sp_')){ d.spec=d.spec||{}; d.spec[e.target.id.slice(3)]=v; }
-  if(e.target.id==='s_color') d.color=v; if(e.target.id==='s_name') d.name=v; if(e.target.id==='s_note') d.note=v; if(e.target.id==='s_w'&&+v>0) d.w=+v/FT; if(e.target.id==='s_l'&&+v>0) d.l=+v/FT; if(e.target.id==='s_rot'&&v!=='') d.rot=((+v%360)+360)%360; if(e.target.id==='s_r'&&+v>0) d.r=+v/FT; if(e.target.id==='s_layer'){ const L=S.dl.find(l=>l.id===v); if(L){ d.layer=v; d.color=L.color; } renderLayers(); renderSel(); persist(); return redraw(); }
+  if(e.target.id==='s_color') d.color=v; if(e.target.id==='s_name') d.name=v; if(e.target.id==='s_note') d.note=v; if(e.target.id==='s_w'&&+v>0) d.w=+v/FT; if(e.target.id==='s_l'&&+v>0) d.l=+v/FT; if(e.target.id==='s_rot'&&v!=='') d.rot=((+v%360)+360)%360; if(e.target.id==='s_r'&&+v>0) d.r=+v/FT; if(e.target.id==='s_layer'){ const L=S.dl.find(l=>l.id===v); if(L&&!isLk(L)){ d.layer=v; d.color=L.color; } else if(L) say(LOCKMSG); renderLayers(); renderSel(); persist(); return redraw(); }
   renderStats(); renderCard(); persist(true); redraw(); });
 $('sel').addEventListener('click',e=>{ const d=selDrawing(); if(!d) return; if(photoClick(e,d)) return; if(e.target.id==='s_del') return removeSel(); if(e.target.id==='s_dup') return dup(); if(locked(d)) return; const c=e.target.dataset&&e.target.dataset.col; if(c){ d.color=c; renderSel(); persist(); redraw(); } });
 $('clr').addEventListener('input',e=>{ S.clear=Math.max(0,+e.target.value||0); renderStats(); renderCard(); persist(true); redraw(); });
@@ -1466,13 +1492,16 @@ async function importFiles(files){ const msgs=[]; let did=false, clean=true, got
       const text=await f.text();
       if(ext==='kml'){ dropSample(); sel=null; clean=false; msgs.push(f.name+': '+parseKML(text,base).n+' features.'); did=true; continue; }
       const j=JSON.parse(text);
-      if(j.rbSiteMap){ if(!(j.rbSiteMap.sample&&S.sample)) dropSample();
-        if(!S.sample&&S.drawings.length){ const nu=needsFile()?unsaved:0, a=await ask('Open '+f.name,'This map already has '+S.drawings.length+' drawing'+(S.drawings.length===1?'':'s')+'. '+(nu?nu+' change'+(nu===1?' is':'s are')+' not in a file yet, and replacing drops '+(nu===1?'it':'them')+'. ':'')+'Replace shows only what is in the file. Add keeps what is here and brings the file in on top. Undo reverses either one.',[['replace','Replace what is here'],['add','Add to what is here'],['','Cancel']]);
-          if(!a){ msgs.push(f.name+' was not opened.'); continue; } if(a==='replace'){ S.drawings=[]; S.dl=[]; S.active=null; sel=null; } else clean=false; }
-        gotD=true; msgs.push(f.name+': '+loadDrawings(j)+' drawings.'); did=true; continue; }
+      if(j.rbSiteMap&&j.rbSiteMap.plan){ msgs.push(f.name+' is a published plan file. The site loads it by itself once it is in the data folder of the repository.'); continue; }
+      if(j.rbSiteMap&&j.rbSiteMap.share){ msgs.push(site?reviewOpen(j,f.name):f.name+' is a layer sent for review. Open it on the hosted site.'); continue; }
+      if(j.rbSiteMap){ if(!(j.rbSiteMap.sample&&S.sample)) dropSample(); const own=S.drawings.filter(d=>!d.pl).length;
+        if(!S.sample&&own){ const nu=needsFile()?unsaved:0, a=await ask('Open '+f.name,'This map already has '+own+' drawing'+(own===1?'':'s')+' of your own. '+(nu?nu+' change'+(nu===1?' is':'s are')+' not in a file yet, and replacing drops '+(nu===1?'it':'them')+'. ':'')+'Replace shows only what is in the file. Add keeps what is here and brings the file in on top. Undo reverses either one.',[['replace','Replace what is here'],['add','Add to what is here'],['','Cancel']]);
+          if(!a){ msgs.push(f.name+' was not opened.'); continue; } if(a==='replace'){ S.drawings=[]; S.dl=[]; S.active=null; S.mine={}; sel=null; } else clean=false; }
+        if(site) planTake(j); gotD=true; msgs.push(f.name+': '+loadDrawings(j)+' drawings.'); did=true; continue; }
       dropSample(); clean=false; msgs.push(f.name+': '+parseGeo(j,base)+' features.'); did=true;
     }catch(err){ msgs.push(f.name+' could not be imported. '+(err&&err.message||'')); } }
   S.layers=S.layers.filter(l=>l.features.length);
+  if(site&&gotD){ planRules(); planRemount(); renderPlan(); }
   ensureLayers(); if(did){ renderLayers(); renderSel(); fit(); persist(); if(clean&&gotD){ chg=0; unsaved=0; markSave(); } } say(msgs.join(' '));
   if(pendingAerial){ const a=pendingAerial; pendingAerial=null; uploadAerial(a); } }
 $('imp').addEventListener('click',()=>$('file').click());
@@ -1484,8 +1513,8 @@ $('skipImg').addEventListener('click',()=>{ pendingImg=null; $('boundsBox').hidd
 $('clearSample').addEventListener('click',()=>{ dropSample(); renderLayers(); renderSel(); fit(); persist(); say(''); });
 
 /* ---------- save ---------- */
-function drawingsGeoJSON(){ const ll=q=>toLL(q[0],q[1]);
-  return {type:'FeatureCollection',rbSiteMap:{version:4,sample:S.sample,layers:S.dl.map(l=>({name:l.name,color:l.color})),settings:{tank:S.tank||null,pmax:S.pmax||80,clear:S.clear,post:S.post||10,pmin:PMIN(),flowing:S.flowing!==false,scen:S.scen||[]}},features:S.drawings.map(d=>{
+function drawingsGeoJSON(pick){ const ll=q=>toLL(q[0],q[1]);
+  return {type:'FeatureCollection',rbSiteMap:{version:4,sample:S.sample,layers:S.dl.filter(l=>!l.ro).map(l=>({name:l.name,color:l.color})),settings:{tank:S.tank||null,pmax:S.pmax||80,clear:S.clear,post:S.post||10,pmin:PMIN(),flowing:S.flowing!==false,scen:S.scen||[]}},features:S.drawings.filter(pick||(d=>!d.pl)).map(d=>{
     const pr={name:d.name,kind:{rect:'rectangle',circle:'circle',poly:'polygon',line:'line',point:'label',measure:'measurement'}[d.type]}, L=dlayer(d); if(L){ pr.layer=L.name; pr.layer_color=L.color; } for(const k of ['note','size','material','depth','date']) if(d[k]) pr[k]=d[k]; if(d.photos&&d.photos.length) pr.photos=d.photos; if(d.color) pr.color=d.color; pr.rb={type:d.type}; pr.id=d.id; if(d.sys) pr.sys=d.sys; if(d.cond) pr.cond=d.cond; if(d.status) pr.status=d.status; if(d.spec) pr.spec=d.spec; if(d.idin) pr.idin=d.idin; if(d.asb) pr.asb=true;
     if(d.type==='node'){ pr.rb={type:'node',kind:d.kind}; for(const k of ['set','wl','wh','rel','run','closed','feeds','brk','rev','on','gw']) if(d[k]!=null) pr.rb[k]=d[k]; if(d.asb) pr.asb=true; return {type:'Feature',properties:pr,geometry:{type:'Point',coordinates:ll(d.pts[0])}}; }
     if(d.type==='point'){ if(d.t) pr.rb.t=ll(d.t); return {type:'Feature',properties:pr,geometry:{type:'Point',coordinates:ll(d.pts[0])}}; }
@@ -1515,23 +1544,23 @@ function kmlText(){ const c=q=>{ const l=toLL(q[0],q[1]); return l[0].toFixed(7)
 $('exKml').addEventListener('click',async()=>{ if(!S.origin) return say('There is nothing to export yet.'); if(!window.JSZip) return say('The file packer did not load, so this export is not available right now.');
   const z=new JSZip(); z.file('RB Site Map.kml',kmlText()); const blob=await z.generateAsync({type:'blob',compression:'DEFLATE'}); await saveFile('rb-site-map-google-earth.zip',blob,'Saved. Unzip it, then open the KML file inside with Google Earth.'); });
 let chg=0, unsaved=0;
-function needsFile(){ return !S.sample&&!(cloud.on&&!cloud.ro)&&unsaved>0&&S.drawings.length>0; }
+function needsFile(){ return !S.sample&&!(cloud.on&&!cloud.ro)&&unsaved>0&&S.drawings.some(d=>!d.pl); }
 function markSave(){ const n=needsFile(), b=$('savefile'); b.classList.toggle('dirty',n); if(!cloud.on) b.title=n?'Changes not yet in a file. Save puts everything drawn into a file on this device.':'Save the drawings, layers and settings to a file on this device'; if(!S.sample){ try{ localStorage.setItem(KEY+'_uns',String(unsaved)); }catch(_){} } if(!$('savepop').hidden) savePop(); }
 function ask(title,text,opts){ return new Promise(res=>{ const w=document.createElement('div'); w.id='ask'; w.innerHTML='<div class="askbox" role="dialog" aria-modal="true"><b></b><p></p><div class="btnrow"></div></div>'; w.querySelector('b').textContent=title; w.querySelector('p').textContent=text;
   const key=e=>{ if(e.key==='Escape'){ e.stopPropagation(); e.preventDefault(); done(null); } }, done=v=>{ w.remove(); document.removeEventListener('keydown',key,true); res(v); };
   opts.forEach((o,i)=>{ const b=document.createElement('button'); b.textContent=o[1]; b.dataset.ask=o[0]; if(!i) b.className='primary'; b.addEventListener('click',()=>done(o[0])); w.querySelector('.btnrow').appendChild(b); });
   w.addEventListener('mousedown',e=>{ if(e.target===w) done(null); }); document.addEventListener('keydown',key,true); document.body.appendChild(w); w.querySelector('button').focus(); }); }
-async function saveProject(){ if(!S.drawings.length&&!S.dl.length) return say('There is nothing to save yet.'); const t=new Date(), name='rb-site-drawings-'+t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0')+'.json'; if(await saveFile(name,JSON.stringify(drawingsGeoJSON(),null,1),'Saved '+name+'. Use Open file to bring that file back here later.')){ chg=0; unsaved=0; markSave(); } }
+async function saveProject(){ if(!S.drawings.some(d=>!d.pl)&&!S.dl.some(l=>!l.ro)) return say('There is nothing of your own to save yet.'); const t=new Date(), name='rb-site-drawings-'+t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0')+'.json'; if(await saveFile(name,JSON.stringify(drawingsGeoJSON(),null,1),'Saved '+name+'. Use Open file to bring that file back here later.')){ chg=0; unsaved=0; markSave(); } }
 $('savefile').addEventListener('click',saveProject);
 let pt=null;
-function flushLocal(){ clearTimeout(pt); try{ localStorage.setItem(KEY,JSON.stringify({S,uid})); }catch(_){} }
+function flushLocal(){ clearTimeout(pt); try{ localStorage.setItem(KEY,JSON.stringify({S:Object.assign({},S,{drawings:S.drawings.filter(d=>!d.pl)}),uid})); }catch(_){} }
 function flush(){ flushLocal(); cloudSoon(); }
 let hist={u:[],r:[],cur:null,t:0};
-function snapEntry(){ return {json:JSON.stringify({d:S.drawings,dl:S.dl,a:S.active}),layers:S.layers.slice(),o:S.origin?S.origin.lon+','+S.origin.lat:''}; }
+function snapEntry(){ return {json:JSON.stringify({d:S.drawings.filter(d=>!d.pl),dl:S.dl,a:S.active,m:S.mine||{}}),layers:S.layers.slice(),o:S.origin?S.origin.lon+','+S.origin.lat:''}; }
 const sameEntry=(a,b)=>a.json===b.json&&a.layers.length===b.layers.length&&a.layers.every((l,i)=>l===b.layers[i]);
 function record(typing){ const e=snapEntry(), c=hist.cur; if(!c||c.o!==e.o){ hist={u:[],r:[],cur:e,t:0}; return; } if(sameEntry(c,e)) return; const now=Date.now();
   if(!(typing&&hist.typing&&now-hist.t<900&&hist.u.length)){ hist.u.push(c); if(hist.u.length>100) hist.u.shift(); } hist.cur=e; hist.r=[]; hist.t=now; hist.typing=!!typing; }
-function applyEntry(e){ net={}; multi=[]; if(!S.sample){ unsaved++; setTimeout(markSave,0); } const o=JSON.parse(e.json); S.drawings=o.d; S.dl=o.dl; S.active=o.a; S.layers=e.layers.slice(); hist.cur=e; hist.t=0; hist.typing=false; armed=null; if(editing!=null){ editing=null; $('inl').hidden=true; }
+function applyEntry(e){ net={}; multi=[]; if(!S.sample){ unsaved++; setTimeout(markSave,0); } const o=JSON.parse(e.json); S.drawings=o.d; S.dl=o.dl; S.active=o.a; if(o.m) S.mine=o.m; if(site){ planRemount(); setTimeout(renderPlan,0); } S.layers=e.layers.slice(); hist.cur=e; hist.t=0; hist.typing=false; armed=null; if(editing!=null){ editing=null; $('inl').hidden=true; }
   if(sel&&sel.d&&!selDrawing()) sel=null; if(sel&&sel.L&&!S.layers.includes(sel.L)) sel=null; renderLayers(); renderSel(); clearTimeout(pt); pt=setTimeout(flush,400); redraw(); }
 function describe(a,b){ if(a.layers.length!==b.layers.length||a.layers.some((l,i)=>l!==b.layers[i])) return b.layers.length>=a.layers.length?'import':'remove an imported layer';
   const A=JSON.parse(a.json), B=JSON.parse(b.json), la=new Map(A.dl.map(l=>[l.id,l])), lb=new Map(B.dl.map(l=>[l.id,l])), nm=d=>d.type==='measure'?'measurement':(d.name||'item');
@@ -1547,7 +1576,7 @@ function histLabels(){ const dp=!!(draft&&draft.pts.length), key=hist.u.length+'
 function undo(){ if(draft&&draft.pts.length){ draft.pts.pop(); return redraw(); } record(); if(!hist.u.length) return; let t=''; try{ t=describe(hist.u[hist.u.length-1],hist.cur); }catch(_){} hist.r.push(hist.cur); applyEntry(hist.u.pop()); say('Undone: '+(t||'last change')+'.'); }
 function redo(){ if(!hist.r.length) return; let t=''; try{ t=describe(hist.cur,hist.r[hist.r.length-1]); }catch(_){} hist.u.push(hist.cur); applyEntry(hist.r.pop()); say('Redone: '+(t||'last change')+'.'); }
 $('undo').addEventListener('click',undo); $('redo').addEventListener('click',redo);
-function persist(typing){ net={}; if(!typing&&!S.sample&&++chg>=60){ chg=0; setTimeout(()=>sayAction('60 changes since the last backup file.','Save one now',saveProject),600); } record(typing); if(!S.sample){ if(!typing||!unsaved) unsaved++; markSave(); try{ localStorage.setItem(KEY+'_pending','1'); }catch(_){} } clearTimeout(pt); pt=setTimeout(flush,400); }
+function persist(typing){ net={}; if(site) planTouch(); if(!typing&&!S.sample&&++chg>=60){ chg=0; setTimeout(()=>sayAction('60 changes since the last backup file.','Save one now',saveProject),600); } record(typing); if(!S.sample){ if(!typing||!unsaved) unsaved++; markSave(); try{ localStorage.setItem(KEY+'_pending','1'); }catch(_){} } clearTimeout(pt); pt=setTimeout(flush,400); }
 window.addEventListener('beforeunload',e=>{ if(needsFile()){ e.preventDefault(); e.returnValue=''; } });
 window.addEventListener('pagehide',()=>{ flushLocal(); if(cloud.on&&!cloud.ro&&!S.sample){ clearTimeout(cloud.timer); cloudSync(); } }); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'){ flushLocal(); if(cloud.on&&!cloud.ro&&!S.sample){ clearTimeout(cloud.timer); cloudSync(); } } });
 
@@ -1557,7 +1586,7 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
 function setSave(t){ markSave(); const el=$('savest'); el.textContent=t||(S.sample?'Sample site':'This browser only'); el.title=el.textContent+'. Click for saving and exports.'; el.classList.toggle('local',!t||!/^Saved to the map/.test(t)&&!/…$/.test(t)); el.classList.toggle('busy',!!t&&/…$/.test(t)); if(!$('savepop').hidden) savePop(); }
 function savePop(){ const L=[], tm=d=>d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}), ae=cloud.aerial&&Array.isArray(cloud.aerial.tiles)&&cloud.aerial.tiles.length?cloud.aerial:null;
   const due=needsFile()?'<div class="due"><b>Not yet in a file</b><span>'+unsaved+' change'+(unsaved===1?'':'s')+' since the last saved file, kept in this browser only until you press Save.</span></div>':'';
-  if(site){ L.push(['Your drawings','Kept in this browser on this device, so they are still here next time you open the page on it. Nobody else sees them.']); L.push(['To keep or pass on a copy','Save puts everything you have drawn into one file on this device. Open file brings that file back, here or on another device.']); L.push(['The base map','The aerial image, property boundary and ground elevations load with the page and cannot be changed from here.']); $('saveInfo').innerHTML=due+L.map(x=>'<div><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>').join(''); return; }
+  if(site){ L.push(['Your drawings','Kept in this browser on this device, so they are still here next time you open the page on it. Nobody else sees them.']); L.push(['To keep or pass on a copy','Save puts everything you have drawn into one file on this device. Open file brings that file back, here or on another device.']); L.push(['The agreed plan','It loads with the page, so everyone sees the same thing. Layers marked agreed are read-only. The Plan tab is where you work on a layer, send it for review and see what changed.']); L.push(['The base map','The aerial image, property boundary and ground elevations load with the page and cannot be changed from here.']); $('saveInfo').innerHTML=due+L.map(x=>'<div><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>').join(''); return; }
   if(S.sample) L.push(['Sample site','Nothing here is yours yet. The sample, and anything drawn on it, stays in this browser only. Import your own files to start the real map.']);
   else { L.push(['Drawings, layers and settings',cloud.on&&!cloud.ro?'Saved to the map'+(cloud.last?', last at '+tm(cloud.last):'')+'. They load on any device that opens this map.':cloud.on?'This is a view-only copy. Changes made here stay in this browser and are not saved to the map.':'Saved in this browser only. The map\'s own storage is not available in this view, so other devices will not see them.']);
     L.push(['Aerial image and ground elevations',ae?'Stored with the map in '+ae.tiles.length+' pieces'+(ae.elev?', with the elevations':'')+'. They load by themselves.':imgs.length?'Loaded for this visit only. Import the map file again next time.':'None loaded yet.']);
@@ -1571,7 +1600,7 @@ $('savest').addEventListener('click',()=>{ $('setpop').hidden=true; const p=$('s
 function cloudDocs(){ const m=new Map();
   m.set('map/meta',JSON.stringify({v:1,origin:S.origin||null,active:S.active||null,clear:S.clear,tank:S.tank||null,pmax:S.pmax||80,cint:S.cint||20,df:S.df||null,dt:S.dt||null,show:S.show,post:S.post||10,pmin:PMIN(),flowing:S.flowing!==false,scen:JSON.stringify(S.scen||[])}));
   S.dl.forEach((L,i)=>m.set('ulayers/'+L.id,JSON.stringify({name:L.name,color:L.color,visible:!!L.visible,locked:!!L.locked,order:i})));
-  for(const d of S.drawings) if(!d.temp) m.set('drawings/'+d.id,JSON.stringify({j:JSON.stringify(d),type:d.type,name:d.name||'',layer:d.layer||'none'}));
+  for(const d of S.drawings) if(!d.temp&&!d.pl) m.set('drawings/'+d.id,JSON.stringify({j:JSON.stringify(d),type:d.type,name:d.name||'',layer:d.layer||'none'}));
   for(const L of S.layers){ const j=JSON.stringify(L); if(j.length<230000) m.set('imported/'+L.id,JSON.stringify({j,name:L.name})); }
   return m; }
 function cloudSoon(){ if(!db||!cloud.on||cloud.ro||S.sample) return; clearTimeout(cloud.timer); cloud.timer=setTimeout(cloudSync,1200); setSave('Saving…'); }
@@ -1624,6 +1653,147 @@ async function cloudStart(){ if(!(window.claude&&window.claude.use)){ setSave('T
   adopt(g); cloud.synced=cloudDocs(); if(same) overlay(loc); ensureLayers(); hist={u:[],r:[],cur:snapEntry(),t:0}; syncInputs(); renderLayers(); renderSel(); flushLocal(); cloudSoon(); unboot();
   if(g.ae&&!imgs.length) await loadAerial(g.ae); else redraw(); fit(); }
 
+/* ---------- shared plan: the agreed plan published with the site, drafts on this device, proposals under review ---------- */
+/* One file, data/plan.json, holds the agreed version of every shared layer. A layer shows either the agreed copy (read-only, items flagged pl)
+   or this device's own draft of it, never both. Drafts leave the device as one-layer files; the map keeper reviews them and builds the next plan.json. */
+const P={plan:null,staged:{},review:null,cmp:{},hl:null,pub:{},own:{},kopen:false,err:'',last:null};
+const sameName=(a,b)=>!!String(a||'').trim()&&String(a||'').trim().toLowerCase()===String(b||'').trim().toLowerCase();
+const planLayer=n=>P.plan?P.plan.layers.find(l=>l.name===n)||null:null;
+const isMine=n=>!!(S.mine&&S.mine[n]);
+function shownSrc(n){ return P.review&&P.review.name===n?'review':isMine(n)?'mine':P.staged[n]?'staged':planLayer(n)?'agreed':'local'; }
+function stSave(){ try{ localStorage.setItem(KEY+'_staged',JSON.stringify(P.staged)); }catch(_){} }
+const pdate=s=>{ const d=new Date(s); return s&&!isNaN(d)?d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):''; };
+const today=()=>{ const t=new Date(); return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0'); };
+const slug=s=>String(s||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'layer';
+/* features to drawings without touching the map, by borrowing the normal file reader */
+function itemsFrom(feats){ const kd=S.drawings, kl=S.dl, ka=S.active; S.drawings=[]; S.dl=[]; try{ loadDrawings({features:feats||[]}); return S.drawings.filter(d=>d.type!=='measure').map(d=>{ delete d.layer; return d; }); } finally{ S.drawings=kd; S.dl=kl; S.active=ka; } }
+function featsOf(n){ const L=S.dl.find(l=>l.name===n); return L?drawingsGeoJSON(d=>!d.pl&&!d.temp&&d.type!=='measure'&&d.layer===L.id).features:[]; }
+const agreedFeats=n=>(planLayer(n)||{feats:[]}).feats;
+function shownFeats(n){ const s=shownSrc(n); return s==='review'?P.review.feats:s==='staged'?P.staged[n].feats:s==='agreed'?agreedFeats(n):featsOf(n); }
+/* differences, by item id. Positions are compared with a small tolerance, and values worked out from the shape are ignored */
+const DSKIP={layer:1,layer_color:1,length_ft:1,area_sqft:1,width_ft:1,radius_ft:1,bearing_deg:1,kind:1};
+function eqv(a,b,top){ if(a===b) return true; if(a==null||b==null) return a==null&&b==null; if(typeof a==='number'&&typeof b==='number') return Math.abs(a-b)<1e-8; if(typeof a!=='object'||typeof b!=='object') return false;
+  if(Array.isArray(a)||Array.isArray(b)){ if(!Array.isArray(a)||!Array.isArray(b)||a.length!==b.length) return false; for(let i=0;i<a.length;i++) if(!eqv(a[i],b[i])) return false; return true; }
+  for(const k of new Set(Object.keys(a).concat(Object.keys(b)))){ if(top&&DSKIP[k]) continue; if(!eqv(a[k],b[k])) return false; } return true; }
+function diffFeats(base,cur){ const A=new Map(base.map(f=>[f.properties.id,f])), ids=new Set(), add=[], chg=[], rem=[];
+  for(const f of cur){ const id=f.properties.id, o=A.get(id); ids.add(id); if(!o) add.push(id); else if(!eqv(o.geometry,f.geometry)||!eqv(o.properties,f.properties,true)) chg.push(id); }
+  for(const f of base) if(!ids.has(f.properties.id)) rem.push(f.properties.id); return {add,chg,rem,n:add.length+chg.length+rem.length}; }
+const anyDiff=(a,b)=>diffFeats(a,b).n>0;
+const dfText=df=>[df.add.length&&df.add.length+' added',df.chg.length&&df.chg.length+' changed',df.rem.length&&df.rem.length+' removed'].filter(Boolean).join(', ');
+function planParse(j){ const m=j&&j.rbSiteMap&&j.rbSiteMap.plan; if(!m||!Array.isArray(m.layers)) throw new Error('not a plan'); const by={};
+  (j.features||[]).forEach((f,i)=>{ const p=f&&f.properties; if(!p||!f.geometry||!p.layer||(p.rb||{}).type==='measure') return; if(!p.id) p.id='P'+i; (by[p.layer]=by[p.layer]||[]).push(f); });
+  return {rev:+m.rev||1,date:m.date||'',keeper:m.keeper||'',layers:m.layers.filter(l=>l&&l.name).map(l=>({name:String(l.name),color:l.color||'',owner:l.owner||'',date:l.date||'',lrev:+l.lrev||0,feats:by[l.name]||[]}))}; }
+async function planFetch(){ try{ const r=await fetch('data/plan.json',{cache:'no-cache'}); if(r.status===404){ P.plan=null; P.err=''; return true; } if(!r.ok) throw new Error('http'); P.plan=planParse(await r.json()); P.err=''; return true; }
+  catch(_){ P.err=P.plan?'The site could not be reached just now, so this is the plan as it was when the page loaded.':'The agreed plan could not be loaded just now. Reload the page to try again.'; return false; } }
+function planDrop(n){ const L=S.dl.find(l=>l.name===n); if(L) S.drawings=S.drawings.filter(d=>d.pl||d.layer!==L.id); if(S.mine) delete S.mine[n]; }
+function planClaim(n,keep){ const st=P.staged[n], pl=planLayer(n); let L=S.dl.find(l=>l.name===n); if(!L){ L={id:nid('U'),name:n,color:(st&&st.color)||(pl&&pl.color)||'#ffffff',visible:true}; S.dl.push(L); }
+  S.drawings=S.drawings.filter(d=>d.layer!==L.id); for(const d of itemsFrom(st?st.feats:pl?pl.feats:[])){ d.layer=L.id; S.drawings.push(d); } delete L.ro; L.visible=true; S.mine[n]={base:P.plan?P.plan.rev:null,keep:!!keep}; if(st){ delete P.staged[n]; stSave(); } }
+/* who holds what: work found on this device stays as a draft, an untouched copy goes back to the agreed version, and layers kept under your name unlock */
+function planRules(){ S.mine=S.mine||{}; const cnt=n=>{ const L=S.dl.find(l=>l.name===n); return L?S.drawings.filter(d=>!d.pl&&d.layer===L.id).length:0; };
+  for(const n of Object.keys(P.staged)){ const pl=planLayer(n); if(pl&&!anyDiff(pl.feats,P.staged[n].feats)){ delete P.staged[n]; stSave(); } }
+  if(!P.plan) return;
+  for(const pl of P.plan.layers){ const n=pl.name; if(P.review&&P.review.name===n) continue;
+    if(!S.mine[n]&&cnt(n)>0) S.mine[n]={base:null};
+    if(S.mine[n]&&!anyDiff(pl.feats,featsOf(n))){ S.mine[n].base=P.plan.rev; if(!S.mine[n].keep&&!sameName(pl.owner,S.me)) planDrop(n); }
+    if(!S.mine[n]&&sameName(pl.owner,S.me)) planClaim(n,false); } }
+/* put the read-only copies on the map for every shared layer this device is not drafting */
+function planRemount(){ S.mine=S.mine||{}; S.drawings=S.drawings.filter(d=>!d.pl); const names=new Map(); if(P.plan) for(const l of P.plan.layers) names.set(l.name,l); for(const n in P.staged) if(!names.has(n)) names.set(n,P.staged[n]); if(P.review&&!names.has(P.review.name)) names.set(P.review.name,P.review);
+  for(const [n,meta] of names){ const src=shownSrc(n); let L=S.dl.find(l=>l.name===n);
+    if(src==='mine'||src==='local'){ if(L) delete L.ro; else if(src==='mine') S.dl.push({id:nid('U'),name:n,color:meta.color||'#ffffff',visible:true}); continue; }
+    const m=src==='review'?P.review:src==='staged'?P.staged[n]:meta;
+    if(!L){ L={id:nid('U'),name:n,color:m.color||meta.color||'#ffffff',visible:true,auto:true}; S.dl.push(L); } L.ro=true; if(m.color) L.color=m.color;
+    for(const d of itemsFrom(m.feats)){ d.pl=1; d.layer=L.id; S.drawings.push(d); } }
+  S.dl=S.dl.filter(L=>{ if(names.has(L.name)) return true; delete L.ro; return !(L.auto&&!S.drawings.some(d=>d.layer===L.id)); });
+  if(sel&&sel.d&&!selDrawing()) sel=null; multi=multi.filter(id=>S.drawings.some(d=>d.id===id)); net={}; cmpRefresh(); }
+function planMount(){ if(!site) return; planRules(); planRemount(); ensureLayers(); renderLayers(); renderSel(); renderPlan(); flushLocal(); redraw(); }
+/* a drawings file being opened: any shared layer it carries becomes this device's draft of that layer */
+function planTake(j){ S.mine=S.mine||{}; const ns=new Set(); for(const f of j.features||[]){ const p=f&&f.properties; if(p&&(p.rb||{}).type!=='measure') ns.add(p.layer||'My drawings'); }
+  for(const n of ns){ if(!planLayer(n)&&!P.staged[n]&&!(P.review&&P.review.name===n)) continue; if(P.review&&P.review.name===n){ P.review=null; P.cmp={}; } const L=S.dl.find(l=>l.name===n); if(L){ S.drawings=S.drawings.filter(d=>!(d.pl&&d.layer===L.id)); delete L.ro; } if(!S.mine[n]) S.mine[n]={base:null}; } }
+/* comparison with the agreed version: what to ring on the map, and the ghosts of what was taken out or moved */
+function cmpRefresh(){ const h={add:new Set(),chg:new Set(),rem:[],old:[],by:{},on:false}; const ns=new Set(Object.keys(P.cmp).filter(n=>P.cmp[n])); if(P.review) ns.add(P.review.name);
+  for(const n of ns){ const src=shownSrc(n); if(src==='agreed'||src==='local') continue; const base=agreedFeats(n), df=diffFeats(base,shownFeats(n)), pick=ids=>{ const s=new Set(ids); return itemsFrom(base.filter(f=>s.has(f.properties.id))).map(d=>{ d.ln=n; return d; }); };
+    h.on=true; df.add.forEach(i=>h.add.add(i)); df.chg.forEach(i=>h.chg.add(i)); const rem=df.rem.length?pick(df.rem):[], old=df.chg.length?pick(df.chg):[]; h.rem.push(...rem); h.old.push(...old); h.by[n]={df,rem}; }
+  P.hl=h; }
+function drawCmp(){ const h=P.hl; if(!h||!h.on) return; ctx.save(); ctx.lineCap=ctx.lineJoin='round';
+  const path=d=>{ if(d.type==='node'||d.type==='point'){ const q=d.pts[0]; ctx.beginPath(); ctx.arc(X(q[0]),Y(q[1]),16,0,7); } else { const c=d.type!=='line'; trace(c?shapePts(d):d.pts,c); } }, shown=d=>{ const L=S.dl.find(l=>l.name===d.ln); return !L||L.visible; };
+  ctx.setLineDash([6,5]); ctx.lineWidth=2; ctx.strokeStyle='#ffb020'; for(const d of h.old) if(shown(d)){ path(d); ctx.stroke(); }
+  ctx.lineWidth=3; ctx.strokeStyle='#ff5a4d'; for(const d of h.rem) if(shown(d)){ path(d); ctx.stroke(); if(d.type==='node'||d.type==='point'){ const x=X(d.pts[0][0]), y=Y(d.pts[0][1]); ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(x-6,y-6); ctx.lineTo(x+6,y+6); ctx.moveTo(x+6,y-6); ctx.lineTo(x-6,y+6); ctx.stroke(); ctx.setLineDash([6,5]); } }
+  ctx.setLineDash([]); for(const d of S.drawings){ if(d.type==='measure'||!dvis(d)) continue; const col=h.add.has(d.id)?'#3ddc84':h.chg.has(d.id)?'#ffb020':''; if(!col) continue; const pt=d.type==='node'||d.type==='point'; path(d); ctx.globalAlpha=pt?.95:.6; ctx.lineWidth=pt?5:13; ctx.strokeStyle=col; ctx.stroke(); ctx.globalAlpha=1; }
+  ctx.restore(); }
+let planT=null;
+function planTouch(){ if(P.hl&&P.hl.on) cmpRefresh(); clearTimeout(planT); planT=setTimeout(()=>{ const a=document.activeElement; if($('pane_plan').hidden||(a&&a.tagName==='INPUT'&&a.type==='text'&&$('planBody').contains(a))) return; renderPlan(); },350); }
+const itemLabel=d=>d.name||(d.type==='node'&&d.sys&&SYS[d.sys]?sysNode(d)[1]:d.type==='line'&&d.sys&&sysLine(d)?sysLine(d)[1]:({poly:'Shape',rect:'Shape',circle:'Circle',line:'Line',point:'Label',node:'Fitting'})[d.type]||'Item');
+function planGo(id,n){ let d=S.drawings.find(x=>x.id===id), ghost=false; if(!d&&P.hl){ d=P.hl.rem.find(x=>x.id===id); ghost=true; } if(!d) return; const p=keyPts(d); let cx=0, cy=0; p.forEach(q=>{ cx+=q[0]; cy+=q[1]; }); view.cx=cx/p.length; view.cy=cy/p.length; if(view.s<ZS(100)) view.s=ZS(100);
+  const L=S.dl.find(l=>l.name===n); if(L) L.visible=true; if(!ghost){ if(S.show.hs) delete S.show.hs[stOf(d)]; sel={d:d.id}; multi=[]; } renderLayers(); renderSel(); redraw(); }
+function planFit(n){ const L=S.dl.find(l=>l.name===n); if(!L) return; let a=[1e12,1e12,-1e12,-1e12]; const add=q=>{ a[0]=Math.min(a[0],q[0]); a[1]=Math.min(a[1],q[1]); a[2]=Math.max(a[2],q[0]); a[3]=Math.max(a[3],q[1]); };
+  S.drawings.forEach(d=>{ if(d.layer===L.id) keyPts(d).forEach(add); }); if(P.hl) P.hl.rem.forEach(d=>{ if(d.ln===n) keyPts(d).forEach(add); }); if(a[0]>a[2]) return;
+  view.cx=(a[0]+a[2])/2; view.cy=(a[1]+a[3])/2; view.s=Math.max(.02,Math.min(ZS(15),Math.min(W/Math.max(a[2]-a[0],5),H/Math.max(a[3]-a[1],5))*.8)); redraw(); }
+function planTag(L){ if(!site) return ''; const s=shownSrc(L.name), t={agreed:'agreed',staged:'accepted',review:'proposal',mine:planLayer(L.name)?'your draft':''}[s]; return t?'<span class="ptag">'+t+'</span>':''; }
+function planNote(d){ const n=(dlayer(d)||{}).name, s=shownSrc(n), pl=planLayer(n); return s==='review'?'Part of the proposal from '+P.review.author+'. Read-only while it is under review.':s==='staged'?'Accepted from '+P.staged[n].author+', not published yet. Read-only.':'Part of the agreed plan'+(pl&&pl.owner?', kept by '+pl.owner:'')+'. Read-only here. Open the Plan tab to work on this layer.'; }
+function diffList(n){ const b=P.hl&&P.hl.by[n]; if(!b||!b.df.n) return ''; const rows=[], it=(d,k,w)=>rows.push('<button data-pa="go" data-n="'+esc(n)+'" data-id="'+esc(d.id)+'"><span>'+esc(itemLabel(d))+'</span><span class="dk '+k+'">'+w+'</span></button>');
+  for(const id of b.df.add){ const d=S.drawings.find(x=>x.id===id); if(d) it(d,'a','Added'); } for(const id of b.df.chg){ const d=S.drawings.find(x=>x.id===id); if(d) it(d,'c','Changed'); } for(const d of b.rem) it(d,'r','Removed');
+  return '<div class="slist" style="margin-top:0">'+rows.slice(0,80).join('')+(rows.length>80?'<p class="hint">And '+(rows.length-80)+' more.</p>':'')+'</div>'; }
+/* what the next plan file could contain: accepted proposals, this device's changed drafts, and layers not shared yet */
+function pubRows(){ const rows=[], seen=new Set(), push=n=>{ if(seen.has(n)) return; seen.add(n); const pl=planLayer(n), st=P.staged[n], L=S.dl.find(l=>l.name===n);
+    if(st) return rows.push({n,src:'staged',feats:st.feats,color:st.color||(pl&&pl.color)||'',label:'Accepted from '+st.author+(pl?': '+(dfText(diffFeats(pl.feats,st.feats))||'no change'):': new layer, '+st.feats.length+' items'),def:true,owner:pl&&pl.owner?pl.owner:st.author});
+    if(pl&&isMine(n)){ const f=featsOf(n), df=diffFeats(pl.feats,f); return rows.push(df.n?{n,src:'draft',feats:f,color:L?L.color:pl.color,label:'Your draft: '+dfText(df),def:false,owner:pl.owner||S.me||''}:{n,src:'',label:'No change',owner:pl.owner}); }
+    if(pl) return rows.push({n,src:'',label:'No change',owner:pl.owner});
+    const f=featsOf(n); if(f.length) rows.push({n,src:'new',feats:f,color:L?L.color:'',label:'Not in the plan yet: '+f.length+(f.length===1?' item':' items'),def:!P.plan&&n!=='My drawings',owner:S.me||''}); };
+  if(P.plan) P.plan.layers.forEach(l=>push(l.name)); Object.keys(P.staged).forEach(push); S.dl.forEach(l=>{ if(!l.ro) push(l.name); }); return rows; }
+const pubOn=r=>!!r.src&&(P.pub[r.n]!=null?P.pub[r.n]:r.def), pubOwner=r=>P.own[r.n]!=null?P.own[r.n]:(r.owner||'');
+async function pubBuild(){ if(!String(S.me||'').trim()) return say('Enter your name at the top of the Plan tab first.'); const rows=pubRows(), rev=(P.plan?P.plan.rev:0)+1, layers=[], feats=[]; let n=0;
+  for(const r of rows){ const pl=planLayer(r.n), on=pubOn(r), owner=String(pubOwner(r)).trim(); let fs=null; if(on){ layers.push({name:r.n,color:r.color||'',owner,date:today(),lrev:rev}); fs=r.feats; n++; } else if(pl){ layers.push({name:r.n,color:pl.color,owner,date:pl.date,lrev:pl.lrev}); fs=pl.feats; if(owner!==pl.owner) n++; } else continue;
+    for(const f of fs){ const g=JSON.parse(JSON.stringify(f)); g.properties.layer=r.n; feats.push(g); } }
+  if(!n) return say('Nothing is ticked, so the plan would be the same as the one already published.');
+  const j={type:'FeatureCollection',rbSiteMap:{version:4,plan:{rev,date:new Date().toISOString(),keeper:String(S.me).trim(),layers}},features:feats};
+  if(await saveFile('plan.json',JSON.stringify(j),'Plan revision '+rev+' saved as plan.json. Upload it to the data folder of the repository to publish it.')){ P.last={rev,at:new Date().toISOString()}; try{ localStorage.setItem(KEY+'_pub',JSON.stringify(P.last)); }catch(_){} renderPlan(); } }
+async function shareLayer(n){ if(!String(S.me||'').trim()){ say('Enter your name at the top of the Plan tab first.'); const el=$('pl_me'); if(el) el.focus(); return; } const f=featsOf(n), L=S.dl.find(l=>l.name===n); if(!L||(!f.length&&!planLayer(n))) return say('There is nothing on '+n+' to send yet.');
+  const j={type:'FeatureCollection',rbSiteMap:{version:4,share:{layer:n,color:L.color,author:String(S.me).trim(),date:today(),base:P.plan?P.plan.rev:null}},features:f}, name='rb-plan-'+slug(n)+'-'+slug(S.me)+'-'+today()+'.json';
+  await saveFile(name,JSON.stringify(j,null,1),'Saved '+name+'. Send that file to the map keeper for review.'); }
+function reviewOpen(j,fname){ const sh=j.rbSiteMap.share||{}, n=String(sh.layer||'').trim(); if(!n) return fname+' does not say which layer it is for, so it was not opened.';
+  const feats=(j.features||[]).filter(f=>f&&f.geometry&&f.properties&&(f.properties.rb||{}).type!=='measure'); feats.forEach((f,i)=>{ f.properties.layer=n; if(!f.properties.id) f.properties.id='R'+i; });
+  const pl=planLayer(n), L=S.dl.find(l=>l.name===n), own=L?S.drawings.filter(d=>!d.pl&&d.layer===L.id).length:0, mine=isMine(n);
+  if((mine&&pl&&anyDiff(pl.feats,featsOf(n)))||(!pl&&own)) return fname+' was not opened. It is a proposal for '+n+', and this device has its own unpublished work on that layer. Export or discard your draft of '+n+' in the Plan tab first.';
+  if(mine||own) planDrop(n);
+  P.review={name:n,color:sh.color||'',author:String(sh.author||'').trim()||'someone',date:sh.date||'',base:sh.base,feats,file:fname}; P.cmp={}; planMount(); showTab('plan'); planFit(n); renderChips();
+  return fname+': a proposal for '+n+' from '+P.review.author+'. It is shown over the agreed plan, with the differences marked.'; }
+function reviewClose(accept){ const r=P.review; if(!r) return; P.review=null; P.cmp={}; if(accept){ P.staged[r.name]={feats:r.feats,color:r.color,author:r.author,date:r.date}; stSave(); }
+  planMount(); renderChips(); if(accept){ persist(); say(isMine(r.name)?r.name+' from '+r.author+' is now your draft of that layer, since you keep it. Publish it from the Map keeper section when ready.':r.name+' from '+r.author+' is accepted. It goes into the next plan file you build in the Map keeper section.'); } }
+function renderPlan(){ const el=$('planBody'); if(!el||!site) return; const h=[], v=x=>esc(x==null?'':x);
+  h.push('<div><h2>You</h2><label>Your name <input id="pl_me" type="text" autocomplete="off" value="'+v(S.me)+'" placeholder="e.g. Adam"></label><p class="hint" style="margin-top:6px">Layers the agreed plan keeps under this name unlock for you on this device. Other layers are read-only until you choose to work on them.</p></div>');
+  h.push('<div><h2>Agreed plan</h2><p class="hint">'+(P.plan?'Revision '+P.plan.rev+(pdate(P.plan.date)?', published '+pdate(P.plan.date):'')+(P.plan.keeper?' by '+v(P.plan.keeper):'')+'. It loads by itself each time the page opens.':'No agreed plan has been published yet. Until one is, everything drawn here is your own draft on this device.')+(P.err?' <span style="color:var(--warn)">'+v(P.err)+'</span>':'')+'</p><div class="btnrow" style="margin-top:6px"><button data-pa="check">Check for a newer plan</button></div></div>');
+  if(P.review){ const r=P.review, pl=planLayer(r.name), b=P.hl&&P.hl.by[r.name], df=b?b.df:null;
+    h.push('<div class="prev"><h2 style="margin:0">Proposal under review</h2><div><b>'+v(r.name)+'</b> from '+v(r.author)+(pdate(r.date)?', '+pdate(r.date):'')+'</div><p class="hint">'+(pl?(df&&df.n?'Compared with the agreed version: '+dfText(df)+'.':'Same as the agreed version.'):'A new layer, not in the agreed plan yet: '+r.feats.length+(r.feats.length===1?' item.':' items.'))
+      +(pl&&r.base!=null&&pl.lrev>r.base?' It was started from revision '+v(r.base)+', and the agreed '+v(r.name)+' changed in revision '+pl.lrev+', so some of these differences may be those later changes.':'')+'</p>'+(pl?diffList(r.name):'')+'<div class="btnrow"><button class="primary" data-pa="accept">Accept for the next plan</button><button data-pa="close">Close without accepting</button></div></div>'); }
+  const rows=[], seen=new Set(), row=n=>{ if(seen.has(n)||(P.review&&P.review.name===n)) return; seen.add(n); const s=shownSrc(n), pl=planLayer(n), L=S.dl.find(l=>l.name===n), N=esc(n), col=(L&&L.color)||(pl&&pl.color)||'#ffffff'; let st='', warn='', btn='', list='';
+    if(s==='agreed'){ st='Agreed version, read-only here.'; btn='<button data-pa="claim" data-n="'+N+'">Work on it</button>'; }
+    else if(s==='staged'){ const t=P.staged[n], df=pl?diffFeats(pl.feats,t.feats):null; st='Accepted from '+v(t.author)+', not published yet'+(df?(df.n?': '+dfText(df):': no change'):': new layer')+'.'; btn=(pl?'<button data-pa="cmp" data-n="'+N+'" aria-pressed="'+(!!P.cmp[n])+'">Compare with agreed</button>':'')+'<button data-pa="unstage" data-n="'+N+'">Take it back out</button>'; if(P.cmp[n]) list=diffList(n); }
+    else if(s==='mine'&&pl){ const df=diffFeats(pl.feats,featsOf(n)), m=S.mine[n]; st=df.n?'Your draft. Compared with the agreed version: '+dfText(df)+'.':'Your draft, the same as the agreed version.'; if(m.base!=null&&pl.lrev>m.base&&df.n) warn='The agreed version changed in revision '+pl.lrev+', after you started. Compare to see what differs.';
+      btn=(df.n?'<button class="primary" data-pa="share" data-n="'+N+'">Export for review</button><button data-pa="cmp" data-n="'+N+'" aria-pressed="'+(!!P.cmp[n])+'">Compare with agreed</button>':'')+'<button data-pa="drop" data-n="'+N+'">'+(df.n?'Discard my draft':sameName(pl.owner,S.me)?'':'Stop working on it')+'</button>'; if(!df.n&&sameName(pl.owner,S.me)) btn=''; if(P.cmp[n]) list=diffList(n); }
+    else { const c=L?S.drawings.filter(d=>!d.pl&&d.layer===L.id).length:0; if(!c) return; st='Yours, not in the agreed plan. '+c+(c===1?' item':' items')+', on this device only.'; btn='<button data-pa="share" data-n="'+N+'">Export for review</button>'; }
+    rows.push('<div class="prow"><div class="ph"><span class="sw" style="background:'+esc(col)+';margin:0"></span><b>'+N+'</b><span class="who">'+(pl&&pl.owner?'kept by '+v(pl.owner):'')+'</span></div><div class="pst">'+st+'</div>'+(warn?'<div class="pst warn">'+warn+'</div>':'')+list+(btn?'<div class="btnrow">'+btn+'</div>':'')+'</div>'); };
+  if(P.plan) P.plan.layers.forEach(l=>row(l.name)); Object.keys(P.staged).forEach(row); S.dl.forEach(l=>row(l.name));
+  h.push('<div><h2>Layers</h2>'+(rows.length?'<div class="plist">'+rows.join('')+'</div>':'<p class="hint">Nothing drawn or published yet.</p>')+'</div>');
+  { const pr=pubRows();
+    h.push('<details class="more" id="pl_keeper"'+(P.kopen?' open':'')+'><summary>Map keeper</summary><div style="display:flex;flex-direction:column;gap:10px"><p class="hint">Builds the next plan file from the agreed plan plus whatever is ticked here. Opening a file someone sent for review brings their layer up for accepting first.</p>'
+      +(pr.length?'<div class="pub"><b>Layer</b><b>Kept by</b>'+pr.map(r=>'<label>'+(r.src?'<input type="checkbox" data-pub="'+esc(r.n)+'"'+(pubOn(r)?' checked':'')+'>':'<span style="width:13px;flex:none"></span>')+'<span>'+esc(r.n)+'<small>'+v(r.label)+'</small></span></label><input type="text" data-own="'+esc(r.n)+'" value="'+v(pubOwner(r))+'" aria-label="Who keeps '+esc(r.n)+'">').join('')+'</div>':'<p class="hint">Nothing to publish yet.</p>')
+      +'<div class="btnrow"><button class="primary" data-pa="pub"'+(pr.length?'':' disabled')+'>Build plan.json</button></div>'
+      +(P.last?'<p class="hint">Last file built on this device: revision '+P.last.rev+(pdate(P.last.at)?', '+pdate(P.last.at):'')+'. The site is serving '+(P.plan?'revision '+P.plan.rev:'no plan yet')+'.</p>':'')
+      +'<p class="hint">To publish: in the repository on GitHub open the data folder, choose Add file, Upload files, drag plan.json in and commit. The site picks it up within a minute or two. If the browser named the download plan (1).json, rename it to plan.json first.</p></div></details>'); }
+  el.innerHTML=h.join(''); const k=$('pl_keeper'); if(k) k.addEventListener('toggle',()=>{ P.kopen=k.open; }); }
+$('planBody').addEventListener('change',e=>{ const t=e.target; if(t.id==='pl_me'){ S.me=t.value.trim(); planMount(); persist(); return; } if(t.dataset.pub!=null){ P.pub[t.dataset.pub]=t.checked; return renderPlan(); } if(t.dataset.own!=null) P.own[t.dataset.own]=t.value; });
+$('planBody').addEventListener('click',async e=>{ const b=e.target.closest('[data-pa]'); if(!b) return; const a=b.dataset.pa, n=b.dataset.n, pl=n?planLayer(n):null;
+  if(a==='go') return planGo(b.dataset.id,n);
+  if(a==='check'){ b.disabled=true; const ok=await planFetch(); planMount(); renderChips(); return say(!ok?P.err:P.plan?'The site is serving revision '+P.plan.rev+' of the agreed plan.':'No agreed plan is published on the site yet.'); }
+  if(a==='cmp'){ P.cmp[n]=!P.cmp[n]; cmpRefresh(); renderPlan(); renderChips(); if(P.cmp[n]) planFit(n); return redraw(); }
+  if(a==='share') return shareLayer(n);
+  if(a==='claim'){ if(pl&&pl.owner&&!sameName(pl.owner,S.me)&&!(await ask('Work on '+n,n+' is kept by '+pl.owner+' in the agreed plan. You get your own draft of it on this device. Nothing changes for anyone else unless the map keeper publishes it.',[['go','Make my draft'],['','Cancel']]))) return; planClaim(n,true); planMount(); persist(); return say('You now have your own draft of '+n+'. Export it for review from the Plan tab when it is ready.'); }
+  if(a==='drop'){ const df=pl?diffFeats(pl.feats,featsOf(n)):{n:0}; if(df.n&&!(await ask('Discard your draft of '+n,'Your version on this device ('+dfText(df)+' compared with the agreed version) is replaced by the agreed one. Undo brings it back until the page is closed.',[['go','Discard my draft'],['','Cancel']]))) return; delete P.cmp[n]; planDrop(n); planMount(); persist(); renderChips(); return; }
+  if(a==='unstage'){ delete P.staged[n]; delete P.cmp[n]; stSave(); planMount(); renderChips(); return; }
+  if(a==='accept') return reviewClose(true); if(a==='close') return reviewClose(false);
+  if(a==='pub') return pubBuild(); });
+try{ P.last=JSON.parse(localStorage.getItem(KEY+'_pub')||'null'); }catch(_){}
+
 /* ---------- start ---------- */
 $('t_pan').addEventListener('click',()=>setTool('pan')); $('t_measure').addEventListener('click',()=>setTool('measure'));
 ['poly','circle','line','point'].forEach(k=>$('dk_'+k).addEventListener('click',()=>setTool('draw',k)));
@@ -1638,15 +1808,17 @@ function sayAction(t,label,fn){ say(t); const b=document.createElement('button')
 async function siteStart(){ let m=null; try{ const r=await fetch('data/site.json',{cache:'no-cache'}); if(r.ok) m=await r.json(); }catch(_){} if(!m||!Array.isArray(m.tiles)) return false; site=m; $('locate').hidden=!navigator.geolocation;
   const had=!S.sample&&S.drawings.length; if(S.sample) dropSample(); if(!S.origin&&m.origin) S.origin=m.origin;
   const pb=boundLayers(), bv=pb.length>0&&pb.some(l=>l.visible); S.layers=S.layers.filter(l=>!pb.includes(l)); if(m.boundary){ try{ parseGeo(await (await fetch('data/'+m.boundary)).json(),'Property boundary'); }catch(_){} } boundLayers().forEach(l=>{ l.visible=bv; });
+  $('tab_plan').hidden=false; try{ P.staged=JSON.parse(localStorage.getItem(KEY+'_staged')||'{}')||{}; }catch(_){ P.staged={}; } await planFetch(); planRules(); planRemount();
   ensureLayers(); hist={u:[],r:[],cur:snapEntry(),t:0}; syncInputs(); renderLayers(); renderSel(); fit(); unboot();
   await loadAerial({site:true,tiles:m.tiles.map(t=>Object.assign({},t,{url:'data/'+t.file})),elev:m.elev?Object.assign({},m.elev,{url:'data/'+m.elev.file}):null}); fit(); flushLocal();
-  if(had) sayAction('Picked up the drawings last worked on in this browser.','Start clean',()=>{ S.drawings=[]; S.dl=[]; S.active=null; sel=null; renderLayers(); renderSel(); persist(); redraw(); });
+  if(had) sayAction('Picked up the drawings last worked on in this browser.','Start clean',()=>{ S.drawings=[]; S.dl=[]; S.active=null; S.mine={}; sel=null; planMount(); persist(); });
   return true; }
 function unboot(){ const st=cv.closest('.stage'); if(st.classList.contains('boot')){ st.classList.remove('boot'); redraw(); } }
 function start(){
   let ok=false;
   try{ const j=JSON.parse(localStorage.getItem(KEY)||'null'); if(j&&j.S&&Array.isArray(j.S.layers)&&Array.isArray(j.S.drawings)&&(j.S.sample||j.S.layers.length||j.S.drawings.length)){ S=Object.assign(S,j.S); uid=j.uid||1000; ok=true; { const u=localStorage.getItem(KEY+'_uns'); unsaved=u==null?(S.sample?0:S.drawings.length):(+u||0); } if(S.sample){ if(S.layers.length>=1) sampleImage(); else ok=false; } } }catch(_){}
   if(!ok) loadSample();
+  S.drawings=S.drawings.filter(d=>!d.pl); if(Array.isArray(S.dl)) S.dl.forEach(l=>{ delete l.ro; });
   ensureLayers(); hist.cur=snapEntry();
   ['t_pan','t_measure','dk_poly','dk_circle','dk_line','dk_point'].forEach(id=>{ const b=$(id); b.setAttribute('aria-label',b.querySelector('.tx').textContent); });
   buildSysPanes(); syncInputs(); setSave(''); resize(); fit(); renderLayers(); renderSel(); loop();
