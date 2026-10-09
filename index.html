@@ -106,7 +106,11 @@ kbd{font:500 10.5px var(--mono);opacity:.6;margin-left:4px}
 .slist{display:flex;flex-direction:column;margin-top:10px} .slist h3{margin:10px 0 2px;font-size:12px;font-weight:600;color:var(--muted);text-transform:none} .slist button{display:flex;justify-content:space-between;gap:12px;text-align:left;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;padding:6px 2px;width:100%;font-weight:400} .slist button:hover{background:var(--tint)} .slist button span:last-child{color:var(--muted);white-space:nowrap}
 #chips button,#chips select{border-radius:999px;padding:4px 12px;font-size:12.5px;background:var(--panel);box-shadow:0 1px 5px rgba(10,20,18,.3);width:auto}
 #chips button[aria-pressed="true"]{background:var(--accent)}
-#legend{position:absolute;right:10px;bottom:10px;z-index:2;max-width:236px;padding:9px 11px;font-size:12px;display:flex;flex-direction:column;gap:9px}
+#legend{position:absolute;right:10px;bottom:10px;z-index:2;max-width:236px;max-height:calc(100% - 70px);overflow-y:auto;padding:9px 11px;font-size:12px;display:flex;flex-direction:column;gap:9px}
+#legend.shut{padding:0;border:0;background:none;box-shadow:none;overflow:visible}
+#legend.shut button{border-radius:999px;padding:4px 12px;font-size:12.5px;background:var(--panel);box-shadow:0 1px 5px rgba(10,20,18,.3)}
+#lgx{position:absolute;top:2px;right:2px}
+#legend:not(.shut) .lg:first-of-type b{padding-right:24px}
 .lg{display:flex;flex-direction:column;gap:3px}
 .lg b{font-weight:600}
 .lg span{display:flex;align-items:baseline;gap:7px}
@@ -334,7 +338,7 @@ button.ib:hover{color:var(--ink);border-color:transparent;background:var(--tint)
         </div>
         <div id="draftBtns" hidden><button id="finish" class="primary">Finish</button><button id="cancel">Cancel</button></div>
       </div>
-    <div class="foot"><span id="coord">Move the pointer over the map</span><span id="zoomtxt"></span><span id="ver" title="Version of this tool">Build 24 · 8 Oct 2026</span></div>
+    <div class="foot"><span id="coord">Move the pointer over the map</span><span id="zoomtxt"></span><span id="ver" title="Version of this tool">Build 25 · 8 Oct 2026</span></div>
   </div>
 
   <div class="side" id="side">
@@ -1237,7 +1241,7 @@ function renderChips(){ const bl=boundLayers(); { const pc=$('phchip'), ph=S.sho
     const st=[]; if(has('planned')) st.push('<span><i class="lgd"></i>Planned: dashed</span>'); if(has('construction')) st.push('<span><i style="background:none;box-shadow:0 0 0 2px '+ST_COL.construction+'"></i>Under construction: amber outline</span>'); if(has('remove')) st.push('<span><i style="background:none;box-shadow:0 0 0 2px '+ST_COL.remove+'"></i>To be removed: red outline</span>'); if(vis.some(d=>d.asb)) st.push('<span><i style="background:none;box-shadow:inset 0 0 0 1px #fff,0 0 0 2px #445"></i>As-built record: white centre line</span>');
     if(st.length) L.push('<div class="lg"><b>Status</b>'+st.join('')+(vis.some(d=>d.sys==='struct')?'<em>Structures are coloured by status, as on the chips above.</em>':'')+'</div>'); }
   if(P.hl&&P.hl.on&&(P.hl.add.size||P.hl.chg.size||P.hl.rem.length)) L.push('<div class="lg"><b>Compared with the agreed version</b><span><i style="background:#3ddc84"></i>Added</span><span><i style="background:#ffb020"></i>Changed. Dashed line: where it was.</span><span><i style="background:#ff5a4d"></i>Removed</span></div>');
-  $('legend').innerHTML=L.join(''); $('legend').hidden=!L.length; }
+  { const lg=$('legend'), open=!!S.show.key; lg.hidden=!L.length; lg.classList.toggle('shut',!open); lg.innerHTML=open?'<button id="lgx" class="ib" aria-label="Hide the key" title="Hide the key">\u00d7</button>'+L.join(''):'<button id="lgo" title="What the colours and line styles on the map mean">Key</button>'; } }
 $('chips').addEventListener('click',e=>{ const f=e.target.closest('[data-stf]'); if(f){ const hs=S.show.hs=S.show.hs||{}, k=f.dataset.stf; if(hs[k]) delete hs[k]; else hs[k]=true; if(sel&&sel.d&&!dvis(selDrawing()||{})) sel=null; multi=[]; renderChips(); renderSel(); persist(); return redraw(); } const b=e.target.closest('[data-ov]'); if(!b) return; const k=b.dataset.ov; if(k==='bound'){ const bl=boundLayers(), on=!bl.some(l=>l.visible); bl.forEach(l=>{ l.visible=on; }); if(!on&&sel&&sel.L&&bl.includes(sel.L)) sel=null; renderLayers(); renderSel(); persist(); return redraw(); } S.show[k]=!S.show[k]; renderChips(); renderStats(); persist(); redraw(); });
 $('cint').addEventListener('change',e=>{ S.cint=+e.target.value; persist(); redraw(); });
 function renderEmpty(){ $('empty').hidden=!!(S.sample||imgs.length||S.layers.length||S.drawings.length||S.dl.length||tool!=='pan'||pendingImg); }
@@ -1697,8 +1701,8 @@ function planStat(t){ P.stat=t; setSave(''); }
 function planKeep(path,obj,sha){ P.files[path]={sha,path,name:obj.name,color:obj.color||'',by:obj.by||'',at:obj.at||'',feats:obj.features}; return P.files[path]; }
 function newPath(n){ let p='layers/'+slug(n)+'.json'; for(let i=2;P.files[p];i++) p='layers/'+slug(n)+'-'+i+'.json'; return p; }
 const planIdle=()=>{ const a=document.activeElement; return !(a&&a.tagName==='INPUT'&&/^(text|password)$/.test(a.type)&&$('planBody').contains(a)); };
-async function planSync(){ if(!P.conn||!site) return; if(P.busy){ P.again=true; return; } if(drag||editing!=null||(draft&&draft.pts&&draft.pts.length)){ clearTimeout(P.timer); P.timer=setTimeout(planSync,2000); return; }
-  P.busy=true; P.again=false; const r0=P.rev, who=P.me?' ('+P.me+')':'', incoming=[]; let conflict=false; if(P.pend) planStat('Saving…'); else if(P.first) planStat('Checking the shared map…');
+async function planSync(){ if(!P.conn||!site) return; if(P.busy){ P.again=true; return; } if(drag||editing!=null||(draft&&draft.pts&&draft.pts.length)||/^ln_/.test((document.activeElement||{}).id||'')){ clearTimeout(P.timer); P.timer=setTimeout(planSync,2000); return; }
+  P.busy=true; P.again=false; const r0=P.rev, who=P.me?' ('+P.me+')':'', incoming=[]; let conflict=false, tidy=false; if(P.pend) planStat('Saving…'); else if(P.first) planStat('Checking the shared map…');
   try{ const ls=await gh('GET','layers')||[], seen=new Set();
     for(const e of ls){ if(e.type!=='file'||!/\.json$/.test(e.name)) continue; seen.add(e.path); const k=P.files[e.path]; if(k&&k.sha===e.sha) continue; let j=null; try{ j=JSON.parse(await gh('GET',e.path,null,true)); }catch(x){ if(x.status!=null) throw x; continue; } if(!j||!j.name||!Array.isArray(j.features)) continue;
       j.name=String(j.name); j.features=j.features.filter(f=>f&&f.geometry&&f.properties&&(f.properties.rb||{}).type!=='measure'); j.features.forEach((f,i)=>{ f.properties.layer=j.name; if(!f.properties.id) f.properties.id='F'+i; }); planKeep(e.path,j,e.sha); }
@@ -1708,13 +1712,13 @@ async function planSync(){ if(!P.conn||!site) return; if(P.busy){ P.again=true; 
       const merged=merge3(sy?sy.feats:null,local,server);
       if(anyDiff(local,merged)){ applyLayer(n,merged,sv&&sv.color); incoming.push(n+(sv&&sv.by&&!sameName(sv.by,P.me)?' ('+sv.by+')':'')); L=S.dl.find(l=>l.name===n); }
       const col=(!sv||(sy&&L&&L.color&&L.color!==sy.color)?L&&L.color:sv.color)||''; if(L&&col&&L.color!==col) L.color=col;
-      if(!merged.length){ if(sv){ try{ await gh('DELETE',sv.path,{message:'Remove '+n+who,sha:sv.sha}); delete P.files[sv.path]; delete P.live[n]; }catch(e){ if(e.status!==409&&e.status!==404&&e.status!==422) throw e; conflict=true; continue; } } delete P.synced[n]; continue; }
+      if(!merged.length){ if(sv){ try{ await gh('DELETE',sv.path,{message:'Remove '+n+who,sha:sv.sha}); delete P.files[sv.path]; delete P.live[n]; }catch(e){ if(e.status!==409&&e.status!==404&&e.status!==422) throw e; conflict=true; continue; } } if(!sv&&sy&&L&&!isSysLayer(L)&&!S.drawings.some(d=>d.layer===L.id)){ S.dl=S.dl.filter(x=>x!==L); if(S.active===L.id) S.active=null; tidy=true; } delete P.synced[n]; continue; }
       if(!sv||anyDiff(server,merged)||(col&&col!==sv.color)){ const path=sv?sv.path:newPath(n), obj={v:1,name:n,color:col,by:P.me||'',at:new Date().toISOString(),features:merged};
         try{ const sha=await ghPut(path,obj,sv?sv.sha:null,(sv?'Update ':'Add ')+n+who); P.live[n]=planKeep(path,obj,sha); P.synced[n]={sha,feats:merged,color:col}; }catch(e){ if(!e.conflict) throw e; conflict=true; } }
       else P.synced[n]={sha:sv.sha,feats:merged,color:sv.color}; }
     syncSave(); P.err=''; P.first=false; if(P.rev===r0&&!conflict) P.pend=false; planStat(P.pend?'Saving…':'Saved to the map');
   }catch(e){ P.err=errText(e); planStat(e.status===0?'Offline. Changes stay on this device.':'Not saved. Open the Sharing tab.'); }
-  if(incoming.length){ net={}; ensureLayers(); if(sel&&sel.d&&!selDrawing()) sel=null; multi=multi.filter(id=>S.drawings.some(d=>d.id===id)); hist={u:[],r:[],cur:snapEntry(),t:0}; flushLocal(); renderLayers(); renderSel(); redraw(); if(!P.quiet) say('Updated from the shared map: '+incoming.join(', ')+'.'); }
+  if(incoming.length||tidy){ net={}; ensureLayers(); const ae=document.activeElement, typing=!!(ae&&/^(INPUT|SELECT)$/.test(ae.tagName)&&$('sel').contains(ae)&&selDrawing()); if(sel&&sel.d&&!selDrawing()) sel=null; multi=multi.filter(id=>S.drawings.some(d=>d.id===id)); hist={u:[],r:[],cur:snapEntry(),t:0}; flushLocal(); renderLayers(); if(!typing) renderSel(); redraw(); } if(incoming.length){ if(!P.quiet) say('Updated from the shared map: '+incoming.join(', ')+'.'); }
   P.quiet=false; P.busy=false; markSave(); if(!$('pane_plan').hidden&&planIdle()) renderPlan(); if(P.again||conflict||(P.pend&&!P.err)){ clearTimeout(P.timer); P.timer=setTimeout(planSync,conflict?800:2500); } }
 function planTouch(){ P.rev++; if(!P.conn) return; P.pend=true; clearTimeout(P.timer); P.timer=setTimeout(planSync,4000); if(P.stat!=='Saving…'&&!P.err) planStat('Saving…'); }
 function planApply(){ planTouch(); }
@@ -1761,6 +1765,9 @@ $('planBody').addEventListener('click',async e=>{ const b=e.target.closest('[dat
   if(a==='phrase'){ P.ph=!P.ph; P.link=false; renderPlan(); const el=$('pl_phrase'); if(el) el.focus(); return; }
   if(a==='mkphrase'){ const p=phNorm($('pl_phrase').value); if(p.length<4) return say('Type a pass phrase first.'); if(!(window.crypto&&crypto.subtle)) return say('This browser cannot make the file. Try Chrome or Safari.'); b.disabled=true; const j=await phraseMake(p); b.disabled=false; return saveFile('share.json',j,'Saved share.json. Upload it into the data folder of the site\u2019s repository, and the phrase "'+p+'" will connect people.'); }
   if(a==='copy'){ const el=$('pl_inv'); el.select(); try{ await navigator.clipboard.writeText(el.value); say('Invite link copied.'); }catch(_){ say('Select the link and copy it.'); } } });
+
+/* the key to colours and line styles: closed until asked for, so it does not sit over the map */
+$('legend').addEventListener('click',e=>{ if(!e.target.closest('#lgo,#lgx')) return; S.show.key=!S.show.key; renderChips(); flushLocal(); });
 
 /* ---------- start ---------- */
 $('t_pan').addEventListener('click',()=>setTool('pan')); $('t_measure').addEventListener('click',()=>setTool('measure'));
