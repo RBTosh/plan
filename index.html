@@ -334,7 +334,7 @@ button.ib:hover{color:var(--ink);border-color:transparent;background:var(--tint)
         </div>
         <div id="draftBtns" hidden><button id="finish" class="primary">Finish</button><button id="cancel">Cancel</button></div>
       </div>
-    <div class="foot"><span id="coord">Move the pointer over the map</span><span id="zoomtxt"></span><span id="ver" title="Version of this tool">Build 22 · 8 Oct 2026</span></div>
+    <div class="foot"><span id="coord">Move the pointer over the map</span><span id="zoomtxt"></span><span id="ver" title="Version of this tool">Build 23 · 8 Oct 2026</span></div>
   </div>
 
   <div class="side" id="side">
@@ -772,7 +772,7 @@ function renderSys(){ for(const sys of SYSK){ const C=SYS[sys], pane=$('pane_'+s
 const dvis=d=>{ if(d.type==='measure') return S.show.meas; if(!phaseOn(d)) return false; if(d.sys&&S.show.hs&&S.show.hs[stOf(d)]) return false; if(d.date&&((S.df&&d.date<S.df)||(S.dt&&d.date>S.dt))) return false; return (dlayer(d)||{visible:true}).visible; };
 const isLk=L=>!!(L&&(L.locked||L.ro));
 const locked=d=>!!(d&&d.type!=='measure'&&(d.pl||isLk(dlayer(d))));
-const LOCKMSG='That is read-only. Its layer is locked, or someone else keeps it on the shared map.', ROMSG='Someone else keeps this layer on the shared map, so it is read-only here. The Sharing tab shows who.';
+const LOCKMSG='That layer is locked. Unlock it in the layer list to change it.', ROMSG='Someone else keeps this layer on the shared map, so it is read-only here. The Sharing tab shows who.';
 function polyArea(p){ let a=0; for(let i=0;i<p.length;i++){ const q=p[(i+1)%p.length]; a+=p[i][0]*q[1]-q[0]*p[i][1]; } return Math.abs(a)/2; }
 function pathLen(p,closed){ let t=0; for(let i=1;i<p.length;i++) t+=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]); if(closed&&p.length>1) t+=Math.hypot(p[0][0]-p[p.length-1][0],p[0][1]-p[p.length-1][1]); return t; }
 function pathMid(p){ let h=pathLen(p)/2; for(let i=1;i<p.length;i++){ const L=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]); if(L>0&&h<=L){ const t=h/L; return [p[i-1][0]+t*(p[i][0]-p[i-1][0]),p[i-1][1]+t*(p[i][1]-p[i-1][1])]; } h-=L; } return p[0]; }
@@ -1492,7 +1492,7 @@ async function importFiles(files){ const msgs=[]; let did=false, clean=true, got
       if(ext==='kml'){ dropSample(); sel=null; clean=false; msgs.push(f.name+': '+parseKML(text,base).n+' features.'); did=true; continue; }
       const j=JSON.parse(text);
       if(j.rbSiteMap){ if(!(j.rbSiteMap.sample&&S.sample)) dropSample(); const own=S.drawings.filter(d=>!d.pl).length;
-        if(!S.sample&&own){ const nu=needsFile()?unsaved:0, a=await ask('Open '+f.name,'This map already has '+own+' drawing'+(own===1?'':'s')+' of your own. '+(nu?nu+' change'+(nu===1?' is':'s are')+' not in a file yet, and replacing drops '+(nu===1?'it':'them')+'. ':'')+'Replace shows only what is in the file. Add keeps what is here and brings the file in on top. Undo reverses either one.',[['replace','Replace what is here'],['add','Add to what is here'],['','Cancel']]);
+        if(!S.sample&&own){ const nu=needsFile()?unsaved:0, a=site&&P.conn?'replace':await ask('Open '+f.name,'This map already has '+own+' drawing'+(own===1?'':'s')+' of your own. '+(nu?nu+' change'+(nu===1?' is':'s are')+' not in a file yet, and replacing drops '+(nu===1?'it':'them')+'. ':'')+'Replace shows only what is in the file. Add keeps what is here and brings the file in on top. Undo reverses either one.',[['replace','Replace what is here'],['add','Add to what is here'],['','Cancel']]);
           if(!a){ msgs.push(f.name+' was not opened.'); continue; } if(a==='replace'){ S.drawings=[]; S.dl=[]; S.active=null; sel=null; if(site){ P.synced={}; syncSave(); } } else clean=false; }
         gotD=true; msgs.push(f.name+': '+loadDrawings(j)+' drawings.'); did=true; continue; }
       dropSample(); clean=false; msgs.push(f.name+': '+parseGeo(j,base)+' features.'); did=true;
@@ -1583,7 +1583,7 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
 function setSave(t){ markSave(); if(!t&&site&&P.conn) t=P.stat||'Shared map'; const el=$('savest'); el.textContent=t||(S.sample?'Sample site':'This browser only'); el.title=el.textContent+'. Click for saving and exports.'; el.classList.toggle('local',!t||!/^Saved to the map/.test(t)&&!/…$/.test(t)); el.classList.toggle('busy',!!t&&/…$/.test(t)); if(!$('savepop').hidden) savePop(); }
 function savePop(){ const L=[], tm=d=>d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}), ae=cloud.aerial&&Array.isArray(cloud.aerial.tiles)&&cloud.aerial.tiles.length?cloud.aerial:null;
   const due=site&&P.conn?(P.pend?'<div class="due"><b>Not on the shared map yet</b><span>The latest changes are still being saved. Keep the page open for a few seconds.</span></div>':''):needsFile()?'<div class="due"><b>Not yet in a file</b><span>'+unsaved+' change'+(unsaved===1?'':'s')+' since the last saved file, kept in this browser only until you press Save.</span></div>':'';
-  if(site){ L.push(P.conn?['Layers you have not shared','Kept in this browser on this device only, until you share them from the Sharing tab.']:['Your drawings','Kept in this browser on this device, so they are still here next time you open the page on it. Nobody else sees them.']); L.push(['To keep or pass on a copy','Save puts everything you have drawn into one file on this device. Open file brings that file back, here or on another device.']); L.push(P.conn?['Shared layers','They save themselves to the shared map a few seconds after each change, and the others see them within about a minute. The Sharing tab shows who keeps each layer.']:['Sharing','This device is not connected to the shared map. The Sharing tab connects it.']); L.push(['The base map','The aerial image, property boundary and ground elevations load with the page and cannot be changed from here.']); $('saveInfo').innerHTML=due+L.map(x=>'<div><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>').join(''); return; }
+  if(site){ L.push(P.conn?['The shared map','Everything drawn here saves itself to the shared map a few seconds after each change. Everyone connected works on the same map and sees changes within about a minute.']:['Your drawings','Kept in this browser on this device, so they are still here next time you open the page on it. Nobody else sees them.']); L.push(['To keep or pass on a copy','Save puts everything you have drawn into one file on this device. Open file brings that file back, here or on another device.']); L.push(P.conn?['Measurements and settings','These stay on this device only.']:['Sharing','This device is not connected to the shared map. The Sharing tab connects it.']); L.push(['The base map','The aerial image, property boundary and ground elevations load with the page and cannot be changed from here.']); $('saveInfo').innerHTML=due+L.map(x=>'<div><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>').join(''); return; }
   if(S.sample) L.push(['Sample site','Nothing here is yours yet. The sample, and anything drawn on it, stays in this browser only. Import your own files to start the real map.']);
   else { L.push(['Drawings, layers and settings',cloud.on&&!cloud.ro?'Saved to the map'+(cloud.last?', last at '+tm(cloud.last):'')+'. They load on any device that opens this map.':cloud.on?'This is a view-only copy. Changes made here stay in this browser and are not saved to the map.':'Saved in this browser only. The map\'s own storage is not available in this view, so other devices will not see them.']);
     L.push(['Aerial image and ground elevations',ae?'Stored with the map in '+ae.tiles.length+' pieces'+(ae.elev?', with the elevations':'')+'. They load by themselves.':imgs.length?'Loaded for this visit only. Import the map file again next time.':'None loaded yet.']);
@@ -1650,33 +1650,41 @@ async function cloudStart(){ if(!(window.claude&&window.claude.use)){ setSave('T
   adopt(g); cloud.synced=cloudDocs(); if(same) overlay(loc); ensureLayers(); hist={u:[],r:[],cur:snapEntry(),t:0}; syncInputs(); renderLayers(); renderSel(); flushLocal(); cloudSoon(); unboot();
   if(g.ae&&!imgs.length) await loadAerial(g.ae); else redraw(); fit(); }
 
-/* ---------- shared map: one live copy of every shared layer, kept in a GitHub repository made for it ---------- */
-/* Each shared layer is one file there (layers/NAME.json) with one keeper. The keeper's device edits it and saves it by itself; every other device
-   shows it read-only (items flagged pl) and picks up new versions about once a minute. agreed/NAME.json is the snapshot taken with Mark as agreed. */
-const P={conn:null,me:'',files:{},live:{},agreed:{},synced:{},hold:{},cmp:{},hl:null,busy:false,again:false,pend:false,rev:0,stat:'',err:'',timer:null,code:false,hand:null,setup:false,first:true};
+/* ---------- shared map: one copy of the whole map that every connected device edits ---------- */
+/* It is kept in a GitHub repository made for it, one file per layer (layers/NAME.json). Each device saves by itself a few seconds after a change and
+   picks up other people's changes about once a minute. Changes are merged item by item against what this device last saw, so two people can work on
+   the same layer; if both changed the very same item, the later save wins. Measurements and settings stay on the device. */
+const P={conn:null,me:'',files:{},live:{},synced:{},hl:null,busy:false,again:false,pend:false,rev:0,stat:'',err:'',timer:null,first:true,link:false,setup:false};
+const planLayer=()=>null, planOwner=()=>'', planTag=()=>'', planNote=()=>'', drawCmp=()=>{};
 const sameName=(a,b)=>!!String(a||'').trim()&&String(a||'').trim().toLowerCase()===String(b||'').trim().toLowerCase();
-const planLayer=n=>P.live[n]||null;
-const planOwner=n=>(P.live[n]||{}).owner||'';
-const mine=n=>!!P.live[n]&&sameName(P.live[n].owner,P.me);
-const pdate=s=>{ const d=new Date(s); return s&&!isNaN(d)?d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):''; };
 const ptime=s=>{ const d=new Date(s); if(!s||isNaN(d)) return ''; const t=d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}); return d.toDateString()===new Date().toDateString()?'today at '+t:d.toLocaleDateString(undefined,{day:'numeric',month:'short'})+' at '+t; };
 const slug=s=>String(s||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'layer';
 const lsGet=(k,d)=>{ try{ const v=JSON.parse(localStorage.getItem(KEY+k)||'null'); return v==null?d:v; }catch(_){ return d; } }, lsSet=(k,v)=>{ try{ if(v==null) localStorage.removeItem(KEY+k); else localStorage.setItem(KEY+k,JSON.stringify(v)); }catch(_){} };
 const syncSave=()=>lsSet('_sync',P.synced);
+const shared=d=>d.type!=='measure'&&!d.temp;
 /* features to drawings without touching the map, by borrowing the normal file reader */
 function itemsFrom(feats){ const kd=S.drawings, kl=S.dl, ka=S.active; S.drawings=[]; S.dl=[]; try{ loadDrawings({features:feats||[]}); return S.drawings.filter(d=>d.type!=='measure').map(d=>{ delete d.layer; return d; }); } finally{ S.drawings=kd; S.dl=kl; S.active=ka; } }
-function featsOf(n){ const L=S.dl.find(l=>l.name===n); return L?drawingsGeoJSON(d=>!d.pl&&!d.temp&&d.type!=='measure'&&d.layer===L.id).features:[]; }
-const curFeats=n=>mine(n)?featsOf(n):(P.live[n]||{feats:[]}).feats;
-/* differences, by item id. Positions are compared with a small tolerance, and values worked out from the shape are ignored */
+function featsOf(n){ const L=S.dl.find(l=>l.name===n); return L?drawingsGeoJSON(d=>shared(d)&&d.layer===L.id).features:[]; }
+const localNames=()=>S.dl.filter(L=>S.drawings.some(d=>d.layer===L.id&&shared(d))).map(L=>L.name);
+/* whether two copies of an item are the same. Positions are compared with a small tolerance, and values worked out from the shape are ignored */
 const DSKIP={layer:1,layer_color:1,color:1,length_ft:1,area_sqft:1,width_ft:1,radius_ft:1,bearing_deg:1,kind:1};
 function eqv(a,b,top){ if(a===b) return true; if(a==null||b==null) return a==null&&b==null; if(typeof a==='number'&&typeof b==='number') return Math.abs(a-b)<1e-8; if(typeof a!=='object'||typeof b!=='object') return false;
   if(Array.isArray(a)||Array.isArray(b)){ if(!Array.isArray(a)||!Array.isArray(b)||a.length!==b.length) return false; for(let i=0;i<a.length;i++) if(!eqv(a[i],b[i])) return false; return true; }
   for(const k of new Set(Object.keys(a).concat(Object.keys(b)))){ if(top&&DSKIP[k]) continue; if(!eqv(a[k],b[k])) return false; } return true; }
+const sameF=(o,f)=>eqv(o.geometry,f.geometry)&&eqv(o.properties,f.properties,true)&&(!!f.properties.sys||(o.properties.color||'')===(f.properties.color||''));
 function diffFeats(base,cur){ const A=new Map(base.map(f=>[f.properties.id,f])), ids=new Set(), add=[], chg=[], rem=[];
-  for(const f of cur){ const id=f.properties.id, o=A.get(id); ids.add(id); if(!o) add.push(id); else if(!eqv(o.geometry,f.geometry)||!eqv(o.properties,f.properties,true)||(!f.properties.sys&&(o.properties.color||'')!==(f.properties.color||''))) chg.push(id); }
+  for(const f of cur){ const id=f.properties.id, o=A.get(id); ids.add(id); if(!o) add.push(id); else if(!sameF(o,f)) chg.push(id); }
   for(const f of base) if(!ids.has(f.properties.id)) rem.push(f.properties.id); return {add,chg,rem,n:add.length+chg.length+rem.length}; }
 const anyDiff=(a,b)=>diffFeats(a,b).n>0;
-const dfText=df=>[df.add.length&&df.add.length+' added',df.chg.length&&df.chg.length+' changed',df.rem.length&&df.rem.length+' removed'].filter(Boolean).join(', ');
+/* three-way merge by item. base is what this device last saw on the shared map; with no base (first contact) the shared map wins where both have an item */
+function merge3(base,local,server){ const ix=a=>new Map((a||[]).map(f=>[f.properties.id,f])), B=ix(base), L=ix(local), R=ix(server), out=[], seen=new Set();
+  for(const f of server.concat(local)){ const id=f.properties.id; if(seen.has(id)) continue; seen.add(id); const b=B.get(id), l=L.get(id), r=R.get(id), lc=b?(!l||!sameF(b,l)):!!l, rc=b?(!r||!sameF(b,r)):!!r;
+    const p=!lc?r:!rc?l:!l?r:!r?l:(base?l:r); if(p) out.push(p); }
+  return out; }
+/* bring one layer on this device in line with the merged result, touching only the items that differ */
+function applyLayer(n,merged,color){ let L=S.dl.find(l=>l.name===n); if(!L){ L={id:nid('U'),name:n,color:color||'#ffffff',visible:true}; S.dl.push(L); } const df=diffFeats(featsOf(n),merged), rem=new Set(df.rem), up=new Set(df.add.concat(df.chg));
+  if(rem.size) S.drawings=S.drawings.filter(d=>!(d.layer===L.id&&shared(d)&&rem.has(d.id)));
+  for(const d of itemsFrom(merged.filter(f=>up.has(f.properties.id)))){ d.layer=L.id; const i=S.drawings.findIndex(x=>x.id===d.id); if(i>=0) S.drawings[i]=d; else S.drawings.push(d); } }
 
 /* the store: GitHub's file API. Writes go one at a time, as GitHub asks. */
 const b64=s=>{ const u=new TextEncoder().encode(s); let t=''; for(let i=0;i<u.length;i+=0x8000) t+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); return btoa(t); };
@@ -1684,117 +1692,65 @@ async function gh(method,path,body,raw){ let r; try{ r=await fetch((P.conn.api||
   if(r.status===404&&method==='GET') return null; if(!r.ok){ const e=new Error('http '+r.status); e.status=r.status; throw e; } return raw?r.text():r.json(); }
 async function ghPut(path,obj,sha,msg){ for(let i=0;;i++){ try{ const r=await gh('PUT',path,Object.assign({message:msg,content:b64(JSON.stringify(obj))},sha?{sha}:{})); return r.content.sha; }
     catch(e){ if((e.status===409||e.status===422)&&i<3){ await wait(600*(i+1)); const ls=await gh('GET',path.split('/')[0])||[], cur=ls.find(x=>x.path===path); if((cur?cur.sha:null)!==(sha||null)){ e.conflict=true; throw e; } continue; } throw e; } } }
-const errText=e=>e.status===401?'The access key was not accepted. It may have expired, so ask the map keeper for a new invite code.':e.status===403?'GitHub refused the request. The access key may not have write permission for this repository, or too many requests were sent in a short time.':e.status===404?'The repository for the shared map was not found with this access key.':e.status===0?'The shared map could not be reached. Changes stay on this device and are sent when it can be.':'The shared map returned an error ('+e.status+'). It will try again.';
+const errText=e=>e.status===401?'The access key was not accepted. It may have expired, so ask for a new invite link.':e.status===403?'GitHub refused the request. The access key may not have write permission for this repository, or too many requests were sent in a short time.':e.status===404?'The repository for the shared map was not found with this access key.':e.status===0?'The shared map could not be reached. Changes stay on this device and are sent when it can be.':'The shared map returned an error ('+e.status+'). It will try again.';
 function planStat(t){ P.stat=t; setSave(''); }
-function fileObj(n,feats,owner){ const L=S.dl.find(l=>l.name===n), sv=P.live[n]; return {v:1,name:n,color:(mine(n)||!sv?L&&L.color:sv.color)||(sv&&sv.color)||'',owner:owner,by:P.me,at:new Date().toISOString(),features:feats}; }
-function planIndex(){ P.live={}; P.agreed={}; for(const p in P.files){ const f=P.files[p]; f.path=p; (f.dir==='layers'?P.live:P.agreed)[f.name]=f; } for(const n in P.synced) if(!P.live[n]) delete P.synced[n]; for(const n in P.hold) if(!mine(n)) delete P.hold[n]; }
-function planKeep(path,dir,obj,sha){ P.files[path]={sha,dir,name:obj.name,color:obj.color||'',owner:obj.owner||'',by:obj.by||'',at:obj.at||'',feats:obj.features}; }
-/* take the saved version of one of my layers onto this device */
-function adopt(n){ const sv=P.live[n]; let L=S.dl.find(l=>l.name===n); if(!L){ L={id:nid('U'),name:n,color:sv.color||'#ffffff',visible:true}; S.dl.push(L); } S.drawings=S.drawings.filter(d=>d.layer!==L.id); for(const d of itemsFrom(sv.feats)){ d.layer=L.id; S.drawings.push(d); } delete L.ro; delete L.auto; if(sv.color) L.color=sv.color; P.synced[n]={sha:sv.sha,feats:sv.feats}; P.adopted=true; }
-async function reconcile(n){ const sv=P.live[n], sy=P.synced[n]; if(sy&&sy.sha===sv.sha) return; const local=featsOf(n);
-  if(!anyDiff(sv.feats,local)){ P.synced[n]={sha:sv.sha,feats:sv.feats}; return; }
-  if(sy?!anyDiff(sy.feats,local):!local.length) return adopt(n);
-  const a=await ask('Two versions of '+n,'The shared map has a version of '+n+' saved'+(sv.by?' by '+sv.by:'')+(ptime(sv.at)?' '+ptime(sv.at):'')+'. This device has a different one ('+dfText(diffFeats(sv.feats,local))+' compared with it). Which one should be kept?',[['theirs','Use the saved one'],['mine','Keep this device’s version'],['','Decide later']]);
-  if(a==='theirs') return adopt(n); if(a==='mine'){ P.synced[n]={sha:sv.sha,feats:sv.feats}; return; } P.hold[n]=true; }
-/* put the read-only copies on the map for every shared layer someone else keeps */
-function planApply(){ if(!site) return; S.drawings=S.drawings.filter(d=>!d.pl); let moved=0;
-  for(const n in P.live){ const sv=P.live[n]; let L=S.dl.find(l=>l.name===n);
-    if(mine(n)){ if(L){ delete L.ro; delete L.auto; } else S.dl.push({id:nid('U'),name:n,color:sv.color||'#ffffff',visible:true}); continue; }
-    if(L){ const own=S.drawings.filter(d=>d.layer===L.id); if(own.length){ const f=featsOf(n), sy=P.synced[n]; if((sy&&!anyDiff(sy.feats,f))||!anyDiff(sv.feats,f)) S.drawings=S.drawings.filter(d=>d.layer!==L.id); else { const nm=n+', my copy'; let K=S.dl.find(l=>l.name===nm); if(!K){ K={id:nid('U'),name:nm,color:L.color,visible:true}; S.dl.push(K); } own.forEach(d=>{ d.layer=K.id; }); moved+=own.length; } } }
-    else { L={id:nid('U'),name:n,color:sv.color||'#ffffff',visible:true,auto:true}; S.dl.push(L); }
-    L.ro=true; if(sv.color) L.color=sv.color; delete P.synced[n]; for(const d of itemsFrom(sv.feats)){ d.pl=1; d.layer=L.id; S.drawings.push(d); } }
-  S.dl=S.dl.filter(L=>{ if(P.live[L.name]) return true; delete L.ro; return !(L.auto&&!S.drawings.some(d=>d.layer===L.id)); });
-  if(sel&&sel.d&&!selDrawing()) sel=null; multi=multi.filter(id=>S.drawings.some(d=>d.id===id)); net={}; ensureLayers(); cmpRefresh();
-  if(moved) say(moved+(moved===1?' item of yours was':' items of yours were')+' on a layer someone else keeps, so '+(moved===1?'it was':'they were')+' moved to a layer of your own ending in "my copy".'); }
-function planShow(){ renderLayers(); renderSel(); const a=document.activeElement; if(!(a&&a.tagName==='INPUT'&&/^(text|password)$/.test(a.type)&&$('planBody').contains(a))) renderPlan(); redraw(); }
-async function planSync(){ if(!P.conn||!site) return; if(P.busy){ P.again=true; return; } P.busy=true; P.again=false; const r0=P.rev; let changed=P.first, conflict=false, pushed=false; P.adopted=false; if(P.pend) planStat('Saving…'); else if(P.first) planStat('Checking the shared map…');
-  try{
-    for(const dir of ['layers','agreed']){ const ls=await gh('GET',dir)||[], seen=new Set();
-      for(const e of ls){ if(e.type!=='file'||!/\.json$/.test(e.name)) continue; seen.add(e.path); const k=P.files[e.path]; if(k&&k.sha===e.sha) continue; let j=null; try{ j=JSON.parse(await gh('GET',e.path,null,true)); }catch(x){ if(x.status!=null) throw x; continue; } if(!j||!j.name||!Array.isArray(j.features)) continue;
-        j.name=String(j.name); j.features=j.features.filter(f=>f&&f.geometry&&f.properties&&(f.properties.rb||{}).type!=='measure'); j.features.forEach((f,i)=>{ f.properties.layer=j.name; if(!f.properties.id) f.properties.id='F'+i; }); planKeep(e.path,dir,j,e.sha); changed=true; }
-      for(const p in P.files) if(P.files[p].dir===dir&&!seen.has(p)){ delete P.files[p]; changed=true; } }
-    planIndex(); for(const n in P.live) if(mine(n)&&!P.hold[n]) await reconcile(n);
-    if(changed||P.adopted){ planApply(); flushLocal(); }
-    for(const n in P.live){ const sv=P.live[n]; if(!mine(n)||P.hold[n]) continue; const local=featsOf(n), sy=P.synced[n], L=S.dl.find(l=>l.name===n); if(sy&&sy.sha===sv.sha&&!anyDiff(sy.feats,local)&&(!L||!L.color||L.color===sv.color)) continue;
-      const obj=fileObj(n,local,sv.owner); try{ const sha=await ghPut(sv.path,obj,sv.sha,'Update '+n+' ('+P.me+')'); planKeep(sv.path,'layers',obj,sha); planIndex(); P.synced[n]={sha,feats:local}; pushed=true; }catch(e){ if(!e.conflict) throw e; conflict=true; } }
-    syncSave(); P.err=''; P.first=false; if(P.rev===r0&&!conflict) P.pend=false; planStat(Object.keys(P.hold).length?'Two versions to choose between':P.pend?'Saving…':'Saved to the map');
+function planKeep(path,obj,sha){ P.files[path]={sha,path,name:obj.name,color:obj.color||'',by:obj.by||'',at:obj.at||'',feats:obj.features}; return P.files[path]; }
+function newPath(n){ let p='layers/'+slug(n)+'.json'; for(let i=2;P.files[p];i++) p='layers/'+slug(n)+'-'+i+'.json'; return p; }
+const planIdle=()=>{ const a=document.activeElement; return !(a&&a.tagName==='INPUT'&&/^(text|password)$/.test(a.type)&&$('planBody').contains(a)); };
+async function planSync(){ if(!P.conn||!site) return; if(P.busy){ P.again=true; return; } if(drag||editing!=null||(draft&&draft.pts&&draft.pts.length)){ clearTimeout(P.timer); P.timer=setTimeout(planSync,2000); return; }
+  P.busy=true; P.again=false; const r0=P.rev, who=P.me?' ('+P.me+')':'', incoming=[]; let conflict=false; if(P.pend) planStat('Saving…'); else if(P.first) planStat('Checking the shared map…');
+  try{ const ls=await gh('GET','layers')||[], seen=new Set();
+    for(const e of ls){ if(e.type!=='file'||!/\.json$/.test(e.name)) continue; seen.add(e.path); const k=P.files[e.path]; if(k&&k.sha===e.sha) continue; let j=null; try{ j=JSON.parse(await gh('GET',e.path,null,true)); }catch(x){ if(x.status!=null) throw x; continue; } if(!j||!j.name||!Array.isArray(j.features)) continue;
+      j.name=String(j.name); j.features=j.features.filter(f=>f&&f.geometry&&f.properties&&(f.properties.rb||{}).type!=='measure'); j.features.forEach((f,i)=>{ f.properties.layer=j.name; if(!f.properties.id) f.properties.id='F'+i; }); planKeep(e.path,j,e.sha); }
+    for(const p in P.files) if(!seen.has(p)) delete P.files[p]; P.live={}; for(const p in P.files) P.live[P.files[p].name]=P.files[p];
+    for(const n of new Set(Object.keys(P.live).concat(Object.keys(P.synced),localNames()))){ const sv=P.live[n], sy=P.synced[n], local=featsOf(n), server=sv?sv.feats:[]; let L=S.dl.find(l=>l.name===n);
+      if(sy&&sv&&sy.sha===sv.sha&&!anyDiff(sy.feats,local)&&(!L||!L.color||L.color===sy.color)) continue;
+      const merged=merge3(sy?sy.feats:null,local,server);
+      if(anyDiff(local,merged)){ applyLayer(n,merged,sv&&sv.color); incoming.push(n+(sv&&sv.by&&!sameName(sv.by,P.me)?' ('+sv.by+')':'')); L=S.dl.find(l=>l.name===n); }
+      const col=(!sv||(sy&&L&&L.color&&L.color!==sy.color)?L&&L.color:sv.color)||''; if(L&&col&&L.color!==col) L.color=col;
+      if(!merged.length){ if(sv){ try{ await gh('DELETE',sv.path,{message:'Remove '+n+who,sha:sv.sha}); delete P.files[sv.path]; delete P.live[n]; }catch(e){ if(e.status!==409&&e.status!==404&&e.status!==422) throw e; conflict=true; continue; } } delete P.synced[n]; continue; }
+      if(!sv||anyDiff(server,merged)||(col&&col!==sv.color)){ const path=sv?sv.path:newPath(n), obj={v:1,name:n,color:col,by:P.me||'',at:new Date().toISOString(),features:merged};
+        try{ const sha=await ghPut(path,obj,sv?sv.sha:null,(sv?'Update ':'Add ')+n+who); P.live[n]=planKeep(path,obj,sha); P.synced[n]={sha,feats:merged,color:col}; }catch(e){ if(!e.conflict) throw e; conflict=true; } }
+      else P.synced[n]={sha:sv.sha,feats:merged,color:sv.color}; }
+    syncSave(); P.err=''; P.first=false; if(P.rev===r0&&!conflict) P.pend=false; planStat(P.pend?'Saving…':'Saved to the map');
   }catch(e){ P.err=errText(e); planStat(e.status===0?'Offline. Changes stay on this device.':'Not saved. Open the Sharing tab.'); }
-  if(P.adopted){ hist={u:[],r:[],cur:snapEntry(),t:0}; flushLocal(); }
-  P.busy=false; markSave(); if(changed||P.adopted) planShow(); else if(pushed||P.err){ const a=document.activeElement; if(!$('pane_plan').hidden&&!(a&&a.tagName==='INPUT'&&/^(text|password)$/.test(a.type)&&$('planBody').contains(a))) renderPlan(); } if(P.again||conflict||(P.pend&&!P.err)){ clearTimeout(P.timer); P.timer=setTimeout(planSync,conflict?800:2500); } }
-/* one change to the shared map at a time, after any save that is under way */
-async function planDo(fn,ok){ if(!P.conn) return; if(!String(P.me||'').trim()){ say('Enter your name at the top of the Sharing tab first.'); return; } while(P.busy) await wait(150); P.busy=true; let good=false;
-  try{ await fn(); good=true; P.err=''; }catch(e){ P.err=e.conflict?'Someone else changed that at the same moment. Refresh and try again.':errText(e); say(P.err); }
-  planIndex(); planApply(); syncSave(); flushLocal(); P.busy=false; if(good&&ok) say(ok); planShow(); renderChips(); planSync(); }
-function planTouch(){ P.rev++; if(P.hl&&P.hl.on) cmpRefresh(); if(P.conn&&Object.keys(P.live).some(mine)){ P.pend=true; clearTimeout(P.timer); P.timer=setTimeout(planSync,4000); if(P.stat!=='Saving…'&&!P.err) planStat('Saving…'); }
-  clearTimeout(P.rt); P.rt=setTimeout(()=>{ const a=document.activeElement; if($('pane_plan').hidden||(a&&a.tagName==='INPUT'&&/^(text|password)$/.test(a.type)&&$('planBody').contains(a))) return; renderPlan(); },400); }
-function planBoot(){ P.me=lsGet('_me',''); P.conn=lsGet('_conn',null); P.synced=lsGet('_sync',{})||{}; if(P.conn) planSync();
+  if(incoming.length){ net={}; ensureLayers(); if(sel&&sel.d&&!selDrawing()) sel=null; multi=multi.filter(id=>S.drawings.some(d=>d.id===id)); hist={u:[],r:[],cur:snapEntry(),t:0}; flushLocal(); renderLayers(); renderSel(); redraw(); if(!P.quiet) say('Updated from the shared map: '+incoming.join(', ')+'.'); }
+  P.quiet=false; P.busy=false; markSave(); if(!$('pane_plan').hidden&&planIdle()) renderPlan(); if(P.again||conflict||(P.pend&&!P.err)){ clearTimeout(P.timer); P.timer=setTimeout(planSync,conflict?800:2500); } }
+function planTouch(){ P.rev++; if(!P.conn) return; P.pend=true; clearTimeout(P.timer); P.timer=setTimeout(planSync,4000); if(P.stat!=='Saving…'&&!P.err) planStat('Saving…'); }
+function planApply(){ planTouch(); }
+function planParse(t){ t=String(t||'').trim(); const m=t.match(/join=([A-Za-z0-9_\-+\/=.]+)/); let c=(m?m[1]:t).replace(/\s+/g,'').replace(/^rbmap1\./,'').replace(/-/g,'+').replace(/_/g,'/'); try{ const j=JSON.parse(atob(c)); if(j&&j.r&&j.t) return Object.assign({repo:j.r,token:j.t},j.a?{api:j.a}:{}); }catch(_){} return null; }
+const planLink=()=>location.origin+location.pathname+'#join=rbmap1.'+btoa(JSON.stringify(Object.assign({r:P.conn.repo,t:P.conn.token},P.conn.api?{a:P.conn.api}:{}))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+async function planConnect(c){ P.conn=c; P.err=''; planStat('Checking the shared map…'); let has=false;
+  try{ if(await gh('GET','')==null){ const e=new Error('nf'); e.status=404; throw e; } has=(await gh('GET','layers')||[]).some(e=>/\.json$/.test(e.name)); }
+  catch(e){ P.conn=null; P.err=e.status===404?'That repository was not found with this access key. Check the name, that the key covers it, and that it is not completely empty (it needs at least a README).':errText(e); planStat(''); showTab('plan'); return; }
+  if(lsGet('_syncrepo','')!==c.repo){ P.synced={}; syncSave(); lsSet('_syncrepo',c.repo); }
+  const own=S.drawings.filter(shared).length;
+  if(has&&own&&!Object.keys(P.synced).length){ const a=await ask('Join the shared map','This device already has '+own+' drawing'+(own===1?'':'s')+' of its own. Add them to the shared map for everyone, or leave them out and start from the shared map? Leaving them out removes them from this device, so cancel and press Save first if you want a backup.',[['add','Add them to the shared map'],['drop','Leave them out'],['','Cancel']]);
+    if(!a){ P.conn=null; planStat(''); return renderPlan(); } if(a==='drop'){ S.drawings=S.drawings.filter(d=>!shared(d)); S.dl=[]; S.active=null; sel=null; multi=[]; ensureLayers(); } }
+  lsSet('_conn',c); P.files={}; P.first=true; P.quiet=true; await planSync(); fit(); if(!P.err) say('Connected. Everything drawn on this device now saves to the shared map, and everyone else’s work shows up here.'); if(!$('pane_plan').hidden) renderPlan(); }
+function planBoot(){ P.me=lsGet('_me',''); P.conn=lsGet('_conn',null); P.synced=lsGet('_sync',{})||{}; const c=/join=/.test(location.hash)?planParse(location.hash):null; if(c){ try{ history.replaceState(null,'',location.pathname+location.search); }catch(_){} }
+  if(c&&!(P.conn&&P.conn.repo===c.repo&&P.conn.token===c.token)){ P.conn=null; setTimeout(()=>planConnect(c),600); } else if(P.conn){ P.quiet=true; planSync(); }
   setInterval(()=>{ if(P.conn&&document.visibilityState==='visible') planSync(); },60000); document.addEventListener('visibilitychange',()=>{ if(P.conn&&(document.visibilityState==='visible'||P.pend)) planSync(); }); }
-async function planConnect(c){ if(!String(P.me||'').trim()){ say('Enter your name first, so the others can see who keeps each layer.'); const el=$('pl_me'); if(el) el.focus(); return; } P.conn=c; P.err=''; planStat('Checking the shared map…');
-  try{ if(await gh('GET','')==null){ const e=new Error('nf'); e.status=404; throw e; } }catch(e){ P.conn=null; P.err=e.status===404?'That repository was not found with this access key. Check the name, that the key covers it, and that it is not completely empty (it needs at least a README).':errText(e); planStat(''); return renderPlan(); }
-  lsSet('_conn',c); P.files={}; P.first=true; P.hold={}; await planSync(); if(!P.err) say('Connected to the shared map.'); renderPlan(); }
-function planCode(){ return 'rbmap1.'+btoa(JSON.stringify(Object.assign({r:P.conn.repo,t:P.conn.token},P.conn.api?{a:P.conn.api}:{}))); }
-
-/* comparison with the agreed version: what to ring on the map, and the ghosts of what was taken out or moved */
-function cmpRefresh(){ const h={add:new Set(),chg:new Set(),rem:[],old:[],by:{},on:false};
-  for(const n in P.cmp){ if(!P.cmp[n]||!P.agreed[n]||!P.live[n]) continue; const base=P.agreed[n].feats, df=diffFeats(base,curFeats(n)), pick=ids=>{ const s=new Set(ids); return itemsFrom(base.filter(f=>s.has(f.properties.id))).map(d=>{ d.ln=n; return d; }); };
-    h.on=true; df.add.forEach(i=>h.add.add(i)); df.chg.forEach(i=>h.chg.add(i)); const rem=df.rem.length?pick(df.rem):[], old=df.chg.length?pick(df.chg):[]; h.rem.push(...rem); h.old.push(...old); h.by[n]={df,rem}; }
-  P.hl=h; }
-function drawCmp(){ const h=P.hl; if(!h||!h.on) return; ctx.save(); ctx.lineCap=ctx.lineJoin='round';
-  const path=d=>{ if(d.type==='node'||d.type==='point'){ const q=d.pts[0]; ctx.beginPath(); ctx.arc(X(q[0]),Y(q[1]),16,0,7); } else { const c=d.type!=='line'; trace(c?shapePts(d):d.pts,c); } }, shown=d=>{ const L=S.dl.find(l=>l.name===d.ln); return !L||L.visible; };
-  ctx.setLineDash([6,5]); ctx.lineWidth=2; ctx.strokeStyle='#ffb020'; for(const d of h.old) if(shown(d)){ path(d); ctx.stroke(); }
-  ctx.lineWidth=3; ctx.strokeStyle='#ff5a4d'; for(const d of h.rem) if(shown(d)){ path(d); ctx.stroke(); if(d.type==='node'||d.type==='point'){ const x=X(d.pts[0][0]), y=Y(d.pts[0][1]); ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(x-6,y-6); ctx.lineTo(x+6,y+6); ctx.moveTo(x+6,y-6); ctx.lineTo(x-6,y+6); ctx.stroke(); ctx.setLineDash([6,5]); } }
-  ctx.setLineDash([]); for(const d of S.drawings){ if(d.type==='measure'||!dvis(d)) continue; const col=h.add.has(d.id)?'#3ddc84':h.chg.has(d.id)?'#ffb020':''; if(!col) continue; const pt=d.type==='node'||d.type==='point'; path(d); ctx.globalAlpha=pt?.95:.6; ctx.lineWidth=pt?5:13; ctx.strokeStyle=col; ctx.stroke(); ctx.globalAlpha=1; }
-  ctx.restore(); }
-const itemLabel=d=>d.name||(d.type==='node'&&d.sys&&SYS[d.sys]?sysNode(d)[1]:d.type==='line'&&d.sys&&sysLine(d)?sysLine(d)[1]:({poly:'Shape',rect:'Shape',circle:'Circle',line:'Line',point:'Label',node:'Fitting'})[d.type]||'Item');
-function planGo(id,n){ let d=S.drawings.find(x=>x.id===id), ghost=false; if(!d&&P.hl){ d=P.hl.rem.find(x=>x.id===id); ghost=true; } if(!d) return; const p=keyPts(d); let cx=0, cy=0; p.forEach(q=>{ cx+=q[0]; cy+=q[1]; }); view.cx=cx/p.length; view.cy=cy/p.length; if(view.s<ZS(100)) view.s=ZS(100);
-  const L=S.dl.find(l=>l.name===n); if(L) L.visible=true; if(!ghost){ if(S.show.hs) delete S.show.hs[stOf(d)]; sel={d:d.id}; multi=[]; } renderLayers(); renderSel(); redraw(); }
-function planFit(n){ const L=S.dl.find(l=>l.name===n); if(!L) return; let a=[1e12,1e12,-1e12,-1e12]; const add=q=>{ a[0]=Math.min(a[0],q[0]); a[1]=Math.min(a[1],q[1]); a[2]=Math.max(a[2],q[0]); a[3]=Math.max(a[3],q[1]); };
-  S.drawings.forEach(d=>{ if(d.layer===L.id) keyPts(d).forEach(add); }); if(P.hl) P.hl.rem.forEach(d=>{ if(d.ln===n) keyPts(d).forEach(add); }); if(a[0]>a[2]) return;
-  view.cx=(a[0]+a[2])/2; view.cy=(a[1]+a[3])/2; view.s=Math.max(.02,Math.min(ZS(15),Math.min(W/Math.max(a[2]-a[0],5),H/Math.max(a[3]-a[1],5))*.8)); redraw(); }
-function planTag(L){ const sv=site&&P.live[L.name]; return sv?'<span class="ptag">'+(mine(L.name)?'shared':esc(sv.owner||'shared'))+'</span>':''; }
-function planNote(d){ const n=(dlayer(d)||{}).name, sv=P.live[n]||{}; return 'Kept by '+(sv.owner||'someone else')+' on the shared map'+(ptime(sv.at)?', last saved '+ptime(sv.at):'')+'. Read-only here.'; }
-function diffList(n){ const b=P.hl&&P.hl.by[n]; if(!b||!b.df.n) return ''; const rows=[], it=(d,k,w)=>rows.push('<button data-pa="go" data-n="'+esc(n)+'" data-id="'+esc(d.id)+'"><span>'+esc(itemLabel(d))+'</span><span class="dk '+k+'">'+w+'</span></button>');
-  for(const id of b.df.add){ const d=S.drawings.find(x=>x.id===id); if(d) it(d,'a','Added'); } for(const id of b.df.chg){ const d=S.drawings.find(x=>x.id===id); if(d) it(d,'c','Changed'); } for(const d of b.rem) it(d,'r','Removed');
-  return '<div class="slist" style="margin-top:0">'+rows.slice(0,80).join('')+(rows.length>80?'<p class="hint">And '+(rows.length-80)+' more.</p>':'')+'</div>'; }
 function renderPlan(){ const el=$('planBody'); if(!el||!site) return; const h=[], v=x=>esc(x==null?'':x), warn=P.err?'<p class="hint" style="color:var(--warn);margin-top:8px">'+v(P.err)+'</p>':'';
-  h.push('<div><h2>You</h2><label>Your name <input id="pl_me" type="text" autocomplete="off" value="'+v(P.me)+'" placeholder="e.g. Adam"></label><p class="hint" style="margin-top:6px">Shared layers kept under this name are yours to change. Everyone else’s are read-only here.</p></div>');
   if(!P.conn){
-    h.push('<div><h2>Join the shared map</h2><p class="hint">Paste the invite code the map keeper sent you. After that this device stays connected.</p><label style="display:block;margin-top:8px">Invite code <input id="pl_code" type="text" autocomplete="off" spellcheck="false"></label><div class="btnrow"><button class="primary" data-pa="join">Connect</button></div>'+warn+'</div>');
-    h.push('<details class="more" id="pl_setup"'+(P.setup?' open':'')+'><summary>Set up the shared map (map keeper, once)</summary><div style="display:flex;flex-direction:column;gap:8px"><p class="hint">The shared map lives in a GitHub repository made only for it. Enter that repository and an access key that can write to it. Then send the others the invite code this tab gives you.</p><label>Repository <input id="pl_repo" type="text" autocomplete="off" spellcheck="false" placeholder="your-username/rb-site-plan"></label><label>Access key <input id="pl_tok" type="password" autocomplete="off" placeholder="github_pat_…"></label><div class="btnrow" style="margin-top:2px"><button data-pa="setup">Connect</button></div></div></details>');
+    h.push('<div><h2>Join the shared map</h2><p class="hint">Open the invite link you were sent, or paste it here. After that this device stays connected, and everyone works on the same map.</p><label style="display:block;margin-top:8px">Invite link <input id="pl_code" type="text" autocomplete="off" spellcheck="false"></label><div class="btnrow"><button class="primary" data-pa="join">Connect</button></div>'+warn+'</div>');
+    h.push('<details class="more" id="pl_setup"'+(P.setup?' open':'')+'><summary>Set up the shared map (once)</summary><div style="display:flex;flex-direction:column;gap:8px"><p class="hint">The shared map lives in a GitHub repository made only for it. Enter that repository and an access key that can write to it. Then send the others the invite link this tab gives you.</p><label>Repository <input id="pl_repo" type="text" autocomplete="off" spellcheck="false" placeholder="your-username/rb-site-plan"></label><label>Access key <input id="pl_tok" type="password" autocomplete="off" placeholder="github_pat_…"></label><div class="btnrow" style="margin-top:2px"><button data-pa="setup">Connect</button></div></div></details>');
     el.innerHTML=h.join(''); const k=$('pl_setup'); if(k) k.addEventListener('toggle',()=>{ P.setup=k.open; }); return; }
-  h.push('<div><h2>Shared map</h2><p class="hint">Connected to '+v(P.conn.repo)+'. Your shared layers save themselves a few seconds after each change. Other people’s changes arrive within about a minute, or straight away with Refresh.</p>'+warn+'<div class="btnrow"><button data-pa="sync">Refresh now</button><button data-pa="invite" aria-pressed="'+(!!P.code)+'">Invite code</button><button data-pa="off">Disconnect</button></div>'
-    +(P.code?'<label style="display:block;margin-top:8px">Invite code <input id="pl_inv" type="text" readonly value="'+v(planCode())+'"></label><div class="btnrow" style="margin-top:6px"><button data-pa="copy">Copy</button></div><p class="hint" style="margin-top:6px">Send it privately. Anyone who has it can change the shared map.</p>':'')+'</div>');
-  const rows=[], seen=new Set(), order=n=>{ const i=SYSK.findIndex(k=>SYS[k].name===n); return i<0?99:i; };
-  const row=n=>{ if(seen.has(n)) return; seen.add(n); const sv=P.live[n], L=S.dl.find(l=>l.name===n), N=esc(n), col=(L&&L.color)||(sv&&sv.color)||'#ffffff'; let st='', btn='', extra='';
-    if(!sv){ const c=L?S.drawings.filter(d=>!d.pl&&d.layer===L.id).length:0; if(!c) return; st='Only on this device. '+c+(c===1?' item.':' items.'); btn='<button class="primary" data-pa="share" data-n="'+N+'">Share with everyone</button>'; }
-    else { const me=mine(n), ag=P.agreed[n], df=ag?diffFeats(ag.feats,curFeats(n)):null;
-      st=me?(P.hold[n]?'Two versions exist, one here and one on the shared map.':'Yours. '+(P.synced[n]&&!anyDiff(P.synced[n].feats,featsOf(n))?'Saved '+(ptime(sv.at)||'')+'.':'Saving…')):'Read-only here. Last saved '+(ptime(sv.at)||'')+(sv.by&&!sameName(sv.by,sv.owner)?' by '+v(sv.by):'')+'.';
-      extra='<div class="pst">'+(ag?'Agreed version: '+pdate(ag.at)+(ag.by?', marked by '+v(ag.by):'')+'. Since then: '+(df.n?dfText(df):'no changes')+'.':'No agreed version marked yet.')+'</div>'+(P.cmp[n]?diffList(n):'');
-      if(P.hand===n) extra+='<label style="font-size:12px;color:var(--muted)">Name of the new keeper <input type="text" id="pl_hand" autocomplete="off"></label>';
-      btn=(me&&P.hold[n]?'<button class="primary" data-pa="resolve" data-n="'+N+'">Choose</button>':'')+(ag&&df.n?'<button data-pa="cmp" data-n="'+N+'" aria-pressed="'+(!!P.cmp[n])+'">Compare with agreed</button>':'')+(!ag||df.n?'<button data-pa="agree" data-n="'+N+'">Mark as agreed</button>':'')
-        +(P.hand===n?'<button class="primary" data-pa="hand2" data-n="'+N+'">Hand over</button><button data-pa="hand0">Cancel</button>':me?'<button data-pa="hand" data-n="'+N+'">Hand over</button><button data-pa="unshare" data-n="'+N+'">Stop sharing</button>':'<button data-pa="take" data-n="'+N+'">Take over</button>'); }
-    rows.push('<div class="prow"><div class="ph"><span class="sw" style="background:'+esc(col)+';margin:0"></span><b>'+N+'</b><span class="who">'+(sv&&sv.owner?'kept by '+v(sv.owner):'')+'</span></div><div class="pst">'+st+'</div>'+extra+(btn?'<div class="btnrow">'+btn+'</div>':'')+'</div>'); };
-  Object.keys(P.live).sort((a,b)=>order(a)-order(b)||a.localeCompare(b)).forEach(row); S.dl.forEach(l=>row(l.name));
-  h.push('<div><h2>Layers</h2>'+(rows.length?'<div class="plist">'+rows.join('')+'</div>':'<p class="hint">Nothing drawn or shared yet. Draw something, then share its layer here.</p>')+'</div>');
-  el.innerHTML=h.join(''); const hi=$('pl_hand'); if(hi) hi.focus(); }
-$('planBody').addEventListener('change',e=>{ const t=e.target; if(t.id==='pl_me'){ P.me=t.value.trim(); lsSet('_me',P.me); if(P.conn){ P.hold={}; planApply(); planShow(); planSync(); } } });
-$('planBody').addEventListener('keydown',e=>{ if(e.key==='Enter'&&/^pl_(code|tok|repo|hand)$/.test(e.target.id)){ e.preventDefault(); const b=$('planBody').querySelector(e.target.id==='pl_code'?'[data-pa=join]':e.target.id==='pl_hand'?'[data-pa=hand2]':'[data-pa=setup]'); if(b) b.click(); } });
-$('planBody').addEventListener('click',async e=>{ const b=e.target.closest('[data-pa]'); if(!b) return; const a=b.dataset.pa, n=b.dataset.n, sv=n?P.live[n]:null;
-  if(a==='go') return planGo(b.dataset.id,n);
-  if(a==='join'){ let c=null; try{ const j=JSON.parse(atob($('pl_code').value.replace(/\s+/g,'').replace(/^rbmap1\./,''))); if(j&&j.r&&j.t) c=Object.assign({repo:j.r,token:j.t},j.a?{api:j.a}:{}); }catch(_){} if(!c){ P.err='That does not look like an invite code. Copy the whole code, starting with rbmap1.'; return renderPlan(); } return planConnect(c); }
+  h.push('<div><h2>Shared map</h2><p class="hint">Connected to '+v(P.conn.repo)+'. Everyone connected works on the same map. What you draw saves itself a few seconds later, and other people’s changes arrive within about a minute, or straight away with Refresh.</p>'+warn+'<div class="btnrow"><button data-pa="sync">Refresh now</button><button data-pa="invite" aria-pressed="'+(!!P.link)+'">Invite link</button><button data-pa="off">Disconnect</button></div>'
+    +(P.link?'<label style="display:block;margin-top:8px">Invite link <input id="pl_inv" type="text" readonly value="'+v(planLink())+'"></label><div class="btnrow" style="margin-top:6px"><button data-pa="copy">Copy</button></div><p class="hint" style="margin-top:6px">Send it privately. Opening it connects that device, and anyone who has it can change the map.</p>':'')+'</div>');
+  h.push('<div><h2>Your name</h2><input id="pl_me" type="text" autocomplete="off" value="'+v(P.me)+'" placeholder="e.g. Adam" aria-label="Your name"><p class="hint" style="margin-top:6px">Optional. It shows the others who last changed a layer.</p></div>');
+  const ls=Object.values(P.live).sort((a,b)=>String(b.at).localeCompare(String(a.at)));
+  h.push('<div><h2>Last changes</h2>'+(ls.length?'<div class="stats" style="margin-top:0">'+ls.map(f=>'<div class="row"><span class="k">'+v(f.name)+'</span><span class="v" style="font-family:inherit">'+v((f.by||'someone')+', '+(ptime(f.at)||'earlier'))+'</span></div>').join('')+'</div>':'<p class="hint">Nothing on the shared map yet. Draw something and it appears here.</p>')+'</div>');
+  el.innerHTML=h.join(''); }
+$('planBody').addEventListener('change',e=>{ if(e.target.id==='pl_me'){ P.me=e.target.value.trim(); lsSet('_me',P.me); } });
+$('planBody').addEventListener('keydown',e=>{ if(e.key==='Enter'&&/^pl_(code|tok|repo)$/.test(e.target.id)){ e.preventDefault(); const b=$('planBody').querySelector(e.target.id==='pl_code'?'[data-pa=join]':'[data-pa=setup]'); if(b) b.click(); } });
+$('planBody').addEventListener('click',async e=>{ const b=e.target.closest('[data-pa]'); if(!b) return; const a=b.dataset.pa;
+  if(a==='join'){ const c=planParse($('pl_code').value); if(!c){ P.err='That does not look like an invite link. Copy the whole link.'; return renderPlan(); } return planConnect(c); }
   if(a==='setup'){ const r=$('pl_repo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\.git$/,'').replace(/\/+$/,''), t=$('pl_tok').value.trim(); if(!/^[^\/\s]+\/[^\/\s]+$/.test(r)||!t){ P.err='Enter the repository as owner/name, and the access key.'; return renderPlan(); } return planConnect({repo:r,token:t}); }
-  if(a==='off'){ if(!(await ask('Disconnect this device','This device stops saving to the shared map and stops showing other people’s layers. Your own layers stay on this device. Nothing changes for anyone else.',[['go','Disconnect'],['','Cancel']]))) return; P.conn=null; lsSet('_conn',null); P.files={}; P.synced={}; syncSave(); P.hold={}; P.cmp={}; P.pend=false; P.err=''; P.code=false; planIndex(); planApply(); planStat(''); renderChips(); return planShow(); }
-  if(a==='sync'){ await planSync(); if(!P.err) say('Up to date with the shared map.'); return renderPlan(); }
-  if(a==='invite'){ P.code=!P.code; return renderPlan(); }
-  if(a==='copy'){ const el=$('pl_inv'); el.select(); try{ await navigator.clipboard.writeText(el.value); say('Invite code copied.'); }catch(_){ say('Select the code and copy it.'); } return; }
-  if(a==='cmp'){ P.cmp[n]=!P.cmp[n]; cmpRefresh(); renderPlan(); renderChips(); if(P.cmp[n]) planFit(n); return redraw(); }
-  if(a==='resolve'){ delete P.hold[n]; return planSync(); }
-  if(a==='hand'){ P.hand=n; return renderPlan(); } if(a==='hand0'){ P.hand=null; return renderPlan(); }
-  if(a==='share') return planDo(async()=>{ const path='layers/'+slug(n)+'.json'; if(P.files[path]){ const e=new Error('exists'); e.conflict=true; throw e; } const f=featsOf(n), obj=fileObj(n,f,P.me), sha=await ghPut(path,obj,null,'Share '+n+' ('+P.me+')'); planKeep(path,'layers',obj,sha); P.synced[n]={sha,feats:f}; },n+' is now on the shared map, kept by you. It saves itself from here on.');
-  if(a==='hand2'){ const to=($('pl_hand').value||'').trim(); if(!to) return say('Type the name of the person taking it over, the way they enter it on their device.'); P.hand=null; return planDo(async()=>{ const f=featsOf(n), obj=fileObj(n,f,to), sha=await ghPut(sv.path,obj,sv.sha,'Hand '+n+' to '+to); planKeep(sv.path,'layers',obj,sha); P.synced[n]={sha,feats:f}; },n+' is now kept by '+to+'. It is read-only on this device.'); }
-  if(a==='take'){ if(!(await ask('Take over '+n,n+' is kept by '+(sv.owner||'someone else')+'. Taking it over makes it yours to change and read-only for them, from their next refresh.',[['go','Take it over'],['','Cancel']]))) return; return planDo(async()=>{ const obj=Object.assign(fileObj(n,sv.feats,P.me),{color:sv.color}), sha=await ghPut(sv.path,obj,sv.sha,'Take over '+n+' ('+P.me+')'); planKeep(sv.path,'layers',obj,sha); },n+' is now yours to change.'); }
-  if(a==='unshare'){ if(!(await ask('Stop sharing '+n,'It comes off the shared map, so the others no longer see it. Your copy stays on this device.',[['go','Stop sharing'],['','Cancel']]))) return; return planDo(async()=>{ await gh('DELETE',sv.path,{message:'Stop sharing '+n+' ('+P.me+')',sha:sv.sha}); delete P.files[sv.path]; const ag=P.agreed[n]; if(ag){ await gh('DELETE',ag.path,{message:'Remove agreed '+n,sha:ag.sha}); delete P.files[ag.path]; } delete P.cmp[n]; },n+' is no longer shared.'); }
-  if(a==='agree') return planDo(async()=>{ const f=curFeats(n), ag=P.agreed[n], path=ag?ag.path:'agreed/'+slug(n)+'.json', obj=Object.assign(fileObj(n,f,sv.owner),{color:sv.color}), sha=await ghPut(path,obj,ag?ag.sha:null,'Mark '+n+' as agreed ('+P.me+')'); planKeep(path,'agreed',obj,sha); delete P.cmp[n]; },'The current '+n+' is now the agreed version.'); });
+  if(a==='off'){ if(!(await ask('Disconnect this device','This device stops saving to the shared map and stops receiving other people’s changes. Everything stays on this device as it is now. Nothing changes for anyone else.',[['go','Disconnect'],['','Cancel']]))) return; P.conn=null; lsSet('_conn',null); P.files={}; P.live={}; P.pend=false; P.err=''; P.link=false; clearTimeout(P.timer); planStat(''); return renderPlan(); }
+  if(a==='sync'){ P.quiet=false; await planSync(); if(!P.err) say('Up to date with the shared map.'); return renderPlan(); }
+  if(a==='invite'){ P.link=!P.link; return renderPlan(); }
+  if(a==='copy'){ const el=$('pl_inv'); el.select(); try{ await navigator.clipboard.writeText(el.value); say('Invite link copied.'); }catch(_){ say('Select the link and copy it.'); } } });
 
 /* ---------- start ---------- */
 $('t_pan').addEventListener('click',()=>setTool('pan')); $('t_measure').addEventListener('click',()=>setTool('measure'));
@@ -1813,7 +1769,7 @@ async function siteStart(){ let m=null; try{ const r=await fetch('data/site.json
   $('tab_plan').hidden=false; planBoot();
   ensureLayers(); hist={u:[],r:[],cur:snapEntry(),t:0}; syncInputs(); renderLayers(); renderSel(); fit(); unboot();
   await loadAerial({site:true,tiles:m.tiles.map(t=>Object.assign({},t,{url:'data/'+t.file})),elev:m.elev?Object.assign({},m.elev,{url:'data/'+m.elev.file}):null}); fit(); flushLocal();
-  if(had) sayAction('Picked up the drawings last worked on in this browser.','Start clean',()=>{ S.drawings=[]; S.dl=[]; S.active=null; sel=null; P.synced={}; syncSave(); planApply(); renderLayers(); renderSel(); persist(); redraw(); planSync(); });
+  if(had&&!P.conn&&!/join=/.test(location.hash)) sayAction('Picked up the drawings last worked on in this browser.','Start clean',()=>{ S.drawings=[]; S.dl=[]; S.active=null; sel=null; P.synced={}; syncSave(); planApply(); renderLayers(); renderSel(); persist(); redraw(); planSync(); });
   return true; }
 function unboot(){ const st=cv.closest('.stage'); if(st.classList.contains('boot')){ st.classList.remove('boot'); redraw(); } }
 function start(){
