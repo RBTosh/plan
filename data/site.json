@@ -208,5 +208,10 @@
   "w": 300,
   "h": 300,
   "scale": 0.1
+ },
+ "imagery": {
+  "provider": "Esri World Imagery",
+  "captured": "2025-09-07",
+  "note": "Vantor (Vivid), about 34 cm, the same capture across the whole property. Screenshots taken Oct 2026."
  }
 }
