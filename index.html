@@ -55,6 +55,7 @@ kbd{font:500 10.5px var(--mono);opacity:.6;margin-left:4px}
 #savest::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:7px;vertical-align:1px}
 #savest.local::before{background:var(--muted)}
 #savest.busy::before{background:#d9a514}
+#chips [data-ov="img"].newimg::after{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#e8590c;margin-left:6px;vertical-align:1px}
 #savest.warn{color:var(--warn)}
 #savest.warn::before{background:var(--warn)}
 #savest:hover{border-color:var(--line);color:var(--ink)}
@@ -343,7 +344,7 @@ button.ib:hover{color:var(--ink);border-color:transparent;background:var(--tint)
         </div>
         <div id="draftBtns" hidden><button id="finish" class="primary">Finish</button><button id="cancel">Cancel</button></div>
       </div>
-    <div class="foot"><span id="coord">Move the pointer over the map</span><span id="zoomtxt"></span><span id="ver" title="Version of this tool">Build 28 · 25 Nov 2026</span></div>
+    <div class="foot"><span id="coord">Move the pointer over the map</span><span id="zoomtxt"></span><span id="ver" title="Version of this tool">Build 29 · 25 Nov 2026</span></div>
   </div>
 
   <div class="side" id="side">
@@ -1644,7 +1645,7 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
 function setSave(t){ markSave(); if(!t&&site&&P.conn) t=P.stat||'Shared map'; const el=$('savest'); el.textContent=t||(S.sample?'Sample site':'This browser only'); el.title=el.textContent+'. Click for saving and exports.'; el.classList.toggle('local',!t||!/^Saved to the map/.test(t)&&!/…$/.test(t)); el.classList.toggle('busy',!!t&&/…$/.test(t)); el.classList.toggle('warn',storeFull); if(storeFull){ el.textContent='Device storage full'; el.title='This browser\u2019s storage is full, so this device is not keeping its own copy. Click for details.'; } if(!$('savepop').hidden) savePop(); }
 function savePop(){ const L=[], tm=d=>d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}), ae=cloud.aerial&&Array.isArray(cloud.aerial.tiles)&&cloud.aerial.tiles.length?cloud.aerial:null;
   const due=(storeFull?'<div class="due"><b>This device is not keeping a copy</b><span>The browser\u2019s storage is full. '+(site&&P.conn?'Changes still go to the shared map. ':'Press Save to put your work in a file. ')+'Removing imported layers you no longer need frees space.</span></div>':'')+(site&&P.conn?(P.pend?'<div class="due"><b>Not on the shared map yet</b><span>The latest changes are still being saved. Keep the page open for a few seconds.</span></div>':''):needsFile()&&!storeFull?'<div class="due"><b>Not yet in a file</b><span>'+unsaved+' change'+(unsaved===1?'':'s')+' since the last saved file, kept in this browser only until you press Save.</span></div>':'');
-  if(site){ L.push(P.conn?['The shared map','Everything drawn here saves itself to the shared map a few seconds after each change. Everyone connected works on the same map and sees changes within about a minute.']:['Your drawings',storeFull?'Normally kept in this browser on this device, but its storage is full, so recent changes are not being kept. Nobody else sees them.':'Kept in this browser on this device, so they are still here next time you open the page on it. Nobody else sees them.']); L.push(['To keep or pass on a copy','Save puts everything you have drawn into one file on this device. Open file brings that file back, here or on another device.']); L.push(P.conn?['Measurements and settings','These stay on this device only.']:['Sharing','This device is not connected to the shared map. The Sharing tab connects it.']); L.push(['The base map','The aerial image, property boundary and ground elevations load with the page and cannot be changed from here.']); $('saveInfo').innerHTML=due+L.map(x=>'<div><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>').join(''); return; }
+  if(site){ L.push(P.conn?['The shared map','Everything drawn here saves itself to the shared map a few seconds after each change. Everyone connected works on the same map and sees changes within about a minute.']:['Your drawings',storeFull?'Normally kept in this browser on this device, but its storage is full, so recent changes are not being kept. Nobody else sees them.':'Kept in this browser on this device, so they are still here next time you open the page on it. Nobody else sees them.']); L.push(['To keep or pass on a copy','Save puts everything you have drawn into one file on this device. Open file brings that file back, here or on another device.']); L.push(P.conn?['Measurements and settings','These stay on this device only.']:['Sharing','This device is not connected to the shared map. The Sharing tab connects it.']); L.push(['The base map','The aerial image, property boundary and ground elevations load with the page and cannot be changed from here.'+imgText()]); $('saveInfo').innerHTML=due+L.map(x=>'<div><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>').join(''); return; }
   if(S.sample) L.push(['Sample site','Nothing here is yours yet. The sample, and anything drawn on it, stays in this browser only. Import your own files to start the real map.']);
   else { L.push(['Drawings, layers and settings',cloud.on&&!cloud.ro?'Saved to the map'+(cloud.last?', last at '+tm(cloud.last):'')+'. They load on any device that opens this map.':cloud.on?'This is a view-only copy. Changes made here stay in this browser and are not saved to the map.':'Saved in this browser only. The map\'s own storage is not available in this view, so other devices will not see them.']);
     L.push(['Aerial image and ground elevations',ae?'Stored with the map in '+ae.tiles.length+' pieces'+(ae.elev?', with the elevations':'')+'. They load by themselves.':imgs.length?'Loaded for this visit only. Import the map file again next time.':'None loaded yet.']);
@@ -1844,10 +1845,41 @@ async function siteStart(){ let m=null; try{ const r=await fetch('data/site.json
   const pb=boundLayers(), bv=pb.length>0&&pb.some(l=>l.visible); S.layers=S.layers.filter(l=>!pb.includes(l)); if(m.boundary){ try{ parseGeo(await (await fetch('data/'+m.boundary)).json(),'Property boundary'); }catch(_){} } boundLayers().forEach(l=>{ l.visible=bv; });
   $('tab_plan').hidden=false; planBoot();
   ensureLayers(); hist={u:[],r:[],cur:snapEntry(),t:0}; syncInputs(); renderLayers(); renderSel(); fit(); unboot();
-  await loadAerial({site:true,tiles:m.tiles.map(t=>Object.assign({},t,{url:'data/'+t.file})),elev:m.elev?Object.assign({},m.elev,{url:'data/'+m.elev.file}):null}); fit(); flushLocal();
+  await loadAerial({site:true,tiles:m.tiles.map(t=>Object.assign({},t,{url:'data/'+t.file})),elev:m.elev?Object.assign({},m.elev,{url:'data/'+m.elev.file}):null}); fit(); flushLocal(); imgCheck(m.imagery);
   let seen=false; try{ seen=sessionStorage.getItem(KEY+'_picked')==='1'; sessionStorage.setItem(KEY+'_picked','1'); }catch(_){}
   if(had&&!P.conn&&!seen&&!/join=/.test(location.hash)) sayAction('Picked up the drawings last worked on in this browser.','Start clean',()=>{ S.drawings=[]; S.dl=[]; S.active=null; sel=null; P.synced={}; syncSave(); planApply(); renderLayers(); renderSel(); persist(); redraw(); planSync(); });
   return true; }
+/* The base aerial was stitched from Esri World Imagery; site.json records when that imagery was captured.
+   Esri publishes metadata for every release of World Imagery (the Wayback archive), with the capture date of the imagery at any point.
+   About once a week this asks the newest release what it shows at a few points on the property. Nothing is downloaded or changed:
+   if it is newer, a note says so, and the base map is updated by hand. */
+const IMG_CFG='https://s3-us-west-2.amazonaws.com/config.maptiles.arcgis.com/waybackconfig.json', WAYBACK='https://livingatlas.arcgis.com/wayback/';
+let imgInfo=null;
+const ymd=n=>{ n=String(n||''); return /^\d{8}$/.test(n)?n.slice(0,4)+'-'+n.slice(4,6)+'-'+n.slice(6):n; };
+const dayText=t=>{ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(t||''); return m?new Date(Date.UTC(+m[1],+m[2]-1,+m[3])).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}):''; };
+function imgPoints(){ let a=[1e12,1e12,-1e12,-1e12]; for(const L of boundLayers()) for(const f of L.features) for(const q of f.coords){ a[0]=Math.min(a[0],q[0]); a[1]=Math.min(a[1],q[1]); a[2]=Math.max(a[2],q[0]); a[3]=Math.max(a[3],q[1]); }
+  if(a[0]>a[2]){ if(!S.origin) return []; a=[-200,-200,200,200]; }
+  return [[.5,.5],[.25,.25],[.75,.25],[.25,.75],[.75,.75]].map(([u,v])=>toLL(a[0]+(a[2]-a[0])*u,a[1]+(a[3]-a[1])*v)); }
+async function imgCheck(base){ if(!base||!base.captured) return; imgInfo={base:base.captured,provider:base.provider||'Esri World Imagery'};
+  const old=lsGet('_imgchk',null);
+  if(old&&old.base===base.captured&&Date.now()-old.t<7*864e5){ Object.assign(imgInfo,old); return imgNote(); }
+  const get=async(u,ms)=>{ const c=new AbortController(), tm=setTimeout(()=>c.abort(),ms||15000); try{ const r=await fetch(u,{signal:c.signal,cache:'no-store'}); if(!r.ok) throw new Error('http '+r.status); return await r.json(); } finally{ clearTimeout(tm); } };
+  try{ const cfg=await get(IMG_CFG); let top=null;
+    for(const k in cfg){ const v=cfg[k], m=/(\d{4}-\d{2}-\d{2})/.exec(v&&v.itemTitle||''); if(m&&v.metadataLayerUrl&&(!top||m[1]>top.rel)) top={rel:m[1],url:v.metadataLayerUrl}; }
+    if(!top) return;
+    let newest=null; const jobs=[];
+    for(const p of imgPoints()) for(const id of [2,3,4,5]) jobs.push(get(top.url+'/'+id+'/query?geometry='+p[0].toFixed(6)+','+p[1].toFixed(6)+'&geometryType=esriGeometryPoint&inSR=4326&outFields=SRC_DATE,SRC_RES,NICE_DESC&returnGeometry=false&f=json').then(j=>{
+      for(const f of j.features||[]){ const a=f.attributes||{}, d=ymd(a.SRC_DATE); if(/^\d{4}-\d{2}-\d{2}$/.test(d)&&(!newest||d>newest.d)) newest={d,res:a.SRC_RES,by:a.NICE_DESC||''}; } }).catch(()=>{}));
+    await Promise.all(jobs); if(!newest) return;
+    Object.assign(imgInfo,{t:Date.now(),rel:top.rel,newest}); lsSet('_imgchk',{t:imgInfo.t,base:base.captured,rel:top.rel,newest});
+    imgNote();
+  }catch(_){} }
+function imgNote(){ if(!imgInfo||!imgInfo.newest||!(imgInfo.newest.d>imgInfo.base)) return; if(!$('savepop').hidden) savePop(); const ch=document.querySelector('#chips [data-ov="img"]'); if(ch){ ch.classList.add('newimg'); ch.title='Newer satellite imagery, captured '+dayText(imgInfo.newest.d)+', is available from Esri. Details under the save status at top right.'; }
+  if(lsGet('_imgseen','')===imgInfo.newest.d) return; lsSet('_imgseen',imgInfo.newest.d);
+  setTimeout(()=>sayAction('Newer satellite imagery of RB is available from Esri, captured '+dayText(imgInfo.newest.d)+'. The base map is from '+dayText(imgInfo.base)+'.','Have a look',()=>window.open(WAYBACK,'_blank','noopener')),6000); }
+function imgText(){ if(!imgInfo) return ''; const b=' The aerial is '+imgInfo.provider+', captured '+dayText(imgInfo.base)+'.';
+  if(imgInfo.newest&&imgInfo.newest.d>imgInfo.base) return b+' Newer imagery, captured '+dayText(imgInfo.newest.d)+', is now available from Esri. Take new screenshots to update the base map.';
+  return imgInfo.t?b+' Checked for newer imagery '+ptime(new Date(imgInfo.t).toISOString())+'; none yet.':b; }
 function unboot(){ const st=cv.closest('.stage'); if(st.classList.contains('boot')){ st.classList.remove('boot'); redraw(); } }
 function start(){
   let ok=false;
