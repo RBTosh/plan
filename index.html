@@ -55,6 +55,8 @@ kbd{font:500 10.5px var(--mono);opacity:.6;margin-left:4px}
 #savest::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:7px;vertical-align:1px}
 #savest.local::before{background:var(--muted)}
 #savest.busy::before{background:#d9a514}
+#savest.warn{color:var(--warn)}
+#savest.warn::before{background:var(--warn)}
 #savest:hover{border-color:var(--line);color:var(--ink)}
 #savepop{position:absolute;right:12px;top:calc(100% + 6px);z-index:12;width:min(340px,calc(100% - 24px));padding:12px 14px;display:flex;flex-direction:column;gap:10px;font-size:13px}
 #savepop b{display:block;font-weight:600}
@@ -77,6 +79,8 @@ kbd{font:500 10.5px var(--mono);opacity:.6;margin-left:4px}
 .stleg i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px;box-shadow:0 0 0 1px var(--line)}
 .reclist{display:flex;flex-direction:column;gap:6px}
 .rec{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:8px;align-items:center;font-size:13px}
+.rec.pt{grid-template-columns:auto minmax(0,1fr) 150px}
+.rec.pt input{margin:0}
 .rec small{display:block;color:var(--muted);font-family:var(--mono);font-size:11px}
 .seg{display:flex}
 .seg button{flex:1;border-radius:0;font-size:12.5px;padding:5px 6px}
@@ -241,7 +245,7 @@ button.ib:hover{color:var(--ink);border-color:transparent;background:var(--tint)
 .ph button{position:absolute;top:-6px;right:-6px;background:var(--panel);border:1px solid var(--line);border-radius:50%;width:20px;height:20px;padding:0;line-height:1;color:var(--ink)}
 #lightbox{position:fixed;inset:0;z-index:40;background:rgba(8,14,12,.9);display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out}
 #lightbox img{max-width:100%;max-height:100%;border-radius:6px}
-@media (max-width:1420px){ .bar kbd{display:none} #savest{max-width:140px} .bar{gap:8px 6px} .group + .group{padding-left:6px} .bar button{padding-left:9px;padding-right:9px} }
+@media (max-width:1420px){ .bar kbd{display:none} #savest{max-width:230px;flex-shrink:0} .bar{gap:8px 6px} .group + .group{padding-left:6px} .bar button{padding-left:9px;padding-right:9px} }
 @media (max-width:480px){ .bar h1{display:none} .bar{gap:6px 5px} }
 @media (max-width:900px){ #savest{margin-left:0} .bar .tx{display:none} .bar button{padding:6px 9px} .bar{gap:6px 10px;padding:8px 12px} .group + .group{padding-left:10px} #savest{max-width:150px} }
 @media (max-width:760px){
@@ -278,6 +282,7 @@ button.ib:hover{color:var(--ink);border-color:transparent;background:var(--tint)
   <div class="group">
     <button id="imp" class="primary" title="Open a saved drawings file, a map file or recorded lines"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 12.5v-9h4l1.5 2h5.5v7z"/></svg><span class="tx">Open file</span></button>
     <button id="savefile" title="Save the drawings, layers and settings to a file on this device"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v8M4.5 7L8 10.5 11.5 7M2.5 13.5h11"/></svg><span class="tx">Save</span></button>
+    <button id="gearth" title="Save everything drawn as one file that opens in Google Earth with a double-click"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.6"/><path d="M2.4 8h11.2M8 2.4c2.2 2 2.2 9.2 0 11.2M8 2.4c-2.2 2-2.2 9.2 0 11.2"/></svg><span class="tx">Google Earth</span></button>
     <input id="file" type="file" multiple hidden accept=".kml,.kmz,.json,.geojson,.jpg,.jpeg,.png,.webp">
   </div>
   <button id="setbtn" class="ico" aria-haspopup="dialog" aria-expanded="false" aria-label="Settings" title="Settings: go to coordinates, date filter, clearance distance"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h6M11.5 4.5h2M2.5 11.5h2M7.5 11.5h6"/><circle cx="10" cy="4.5" r="1.6"/><circle cx="6" cy="11.5" r="1.6"/></svg></button>
@@ -338,7 +343,7 @@ button.ib:hover{color:var(--ink);border-color:transparent;background:var(--tint)
         </div>
         <div id="draftBtns" hidden><button id="finish" class="primary">Finish</button><button id="cancel">Cancel</button></div>
       </div>
-    <div class="foot"><span id="coord">Move the pointer over the map</span><span id="zoomtxt"></span><span id="ver" title="Version of this tool">Build 26 · 8 Oct 2026</span></div>
+    <div class="foot"><span id="coord">Move the pointer over the map</span><span id="zoomtxt"></span><span id="ver" title="Version of this tool">Build 28 · 25 Nov 2026</span></div>
   </div>
 
   <div class="side" id="side">
@@ -477,6 +482,9 @@ const SYS={
     lines:[['field','Perimeter fence','Fence',3.6],['pen','Animal enclosure','Pen',2.8,null,'','#4fe3e3'],['electric','Electric fence','Electric',1.8,[2,6],'','#ff9a2e']],
     nodes:[['gate','Gate','G','Gates',[['type','Gate type','t']],'gate'],
       ['solar','Fence energizer (solar)','EN','Electric fence',[['w','Panel size, W','n'],['j','Energizer output, joules','n']],'origin'],
+      ['battery','Fence battery','BA','Electric fence',[['ah','Capacity, Ah','n']]],
+      ['post','Fence post','FP','Posts',[['type','Post type','t']]],
+      ['brace','Corner or brace post','CP','Posts',[['type','Post type','t']]],
       ['other','Other','\u2022',null]],
     more:{}, tip:'Gate: click the fence where it starts, move along it to set the width, click again.'},
   sewer:{name:'Sewer and greywater',color:'#b9814a',ink:'#ffffff',mat:'',lineWord:'line',lineHead:'Draw lines',
@@ -532,15 +540,22 @@ const hfFt=(q,din,lenFt)=>q>0?10.44*lenFt*Math.pow(q,1.852)/(Math.pow(HWC,1.852)
 const isRaw=d=>{ const L=sysLine(d); return !!(L&&L[7]==='raw'); };
 const RAWK={intake:1,weir:1,daylight:1,hturb:1,settle:1};
 const isSrc=d=>d.sys==='water'&&d.type==='node'&&(feeds(d)||d.kind==='intake'||d.kind==='settle');
-function srcWL(d){ if(d.kind==='intake'){ if(d.wl!=null&&d.wl!==''&&isFinite(+d.wl)) return +d.wl; const e=elevAt(d.pts[0]); return e==null?null:e*FT; } return tankWL(d); }
+function srcWL(d){ if(d.kind==='intake'){ if(d.wl!=null&&d.wl!==''&&isFinite(+d.wl)) return +d.wl; if(recZ(d)!=null) return d.zr; const e=elevAt(d.pts[0]); return e==null?null:e*FT; } return tankWL(d); }
 function sysLayer(sys){ const C=SYS[sys]; let L=S.dl.find(l=>l.name===C.name); if(!L){ L={id:nid('U'),name:C.name,color:C.color,visible:true}; S.dl.push(L); } return L; }
 const drawLayer=()=>preset?sysLayer(preset.sys):activeLayer();
 const TL=()=>{ let m=0; for(const d of S.drawings) if(d.type==='node'&&d.sys==='water'&&feeds(d)){ const w=tankWL(d); if(w>m) m=w; } return m||S.tank||0; };
-function tankWL(d){ if(d.wl!=null&&d.wl!==''&&isFinite(+d.wl)) return +d.wl; const e=elevAt(d.pts[0]); return e==null?null:e*FT+(d.wh!=null&&d.wh!==''&&isFinite(+d.wh)?+d.wh:8); }
+function tankWL(d){ if(d.wl!=null&&d.wl!==''&&isFinite(+d.wl)) return +d.wl; const e=recZ(d)!=null?d.zr/FT:elevAt(d.pts[0]); return e==null?null:e*FT+(d.wh!=null&&d.wh!==''&&isFinite(+d.wh)?+d.wh:8); }
 /* the zero for measured heights: the ground at the main feeding tank, taken as its outlet */
-function datumFt(asb){ const t=S.drawings.find(d=>d.type==='node'&&d.sys==='water'&&d.kind==='tank'&&!!d.asb===!!asb&&feeds(d))||S.drawings.find(d=>d.type==='node'&&d.sys==='water'&&d.kind==='tank'&&feeds(d)); if(!t) return null; const e=elevAt(t.pts[0]); return e==null?null:e*FT; }
+function datumFt(asb){ const t=S.drawings.find(d=>d.type==='node'&&d.sys==='water'&&d.kind==='tank'&&!!d.asb===!!asb&&feeds(d))||S.drawings.find(d=>d.type==='node'&&d.sys==='water'&&d.kind==='tank'&&feeds(d)); if(!t) return null; if(recZ(t)!=null) return t.zr; const e=elevAt(t.pts[0]); return e==null?null:e*FT; }
 const hasRel=d=>d.rel!=null&&d.rel!==''&&isFinite(+d.rel);
-function nodeElevFt(d){ if(hasRel(d)){ const z=datumFt(d.asb); if(z!=null) return z+(+d.rel); } const e=elevAt(d.pts[0]); return e==null?null:e*FT; }
+/* a height recorded with the GPS receiver, in feet above sea level: one number for a fitting, one per corner for a line */
+const recZ=d=>d&&typeof d.zr==='number'&&isFinite(d.zr)?d.zr:null;
+const recLine=d=>d&&d.type==='line'&&Array.isArray(d.zr)&&d.zr.length===d.pts.length&&d.zr.some(z=>typeof z==='number')?d.zr:null;
+const hasZ=d=>hasRel(d)||recZ(d)!=null;
+function lineZAt(d,w){ const zr=recLine(d); if(!zr) return null; let best=null, bd=1e9; for(let i=1;i<d.pts.length;i++){ const r=ptSeg(w,d.pts[i-1],d.pts[i]); if(r.d<bd){ bd=r.d; best={i,q:r.q}; } } if(!best) return null;
+  const a=d.pts[best.i-1], b=d.pts[best.i], za=zr[best.i-1], zb=zr[best.i], L=Math.hypot(b[0]-a[0],b[1]-a[1]), f=L?Math.hypot(best.q[0]-a[0],best.q[1]-a[1])/L:0;
+  if(typeof za==='number'&&typeof zb==='number') return za+(zb-za)*f; return typeof za==='number'?za:typeof zb==='number'?zb:null; }
+function nodeElevFt(d){ if(hasRel(d)){ const z=datumFt(d.asb); if(z!=null) return z+(+d.rel); } if(recZ(d)!=null) return d.zr; const e=elevAt(d.pts[0]); return e==null?null:e*FT; }
 const psiN=(h,d)=>{ const z=nodeElevFt(d); return h==null||!isFinite(h)||z==null?null:(h-z)*0.433; };
 function addSys(d){ const L=sysLayer(d.sys); if(L.ro){ setTool('pan'); return say(ROMSG); } net={}; d.id=nid('D'); d.layer=L.id; d.color=L.color; if(!L.visible) L.visible=true;
   if(d.type==='node'){ const nd=sysNode(d), n=S.drawings.filter(x=>x.sys===d.sys&&x.kind===d.kind).length+1; d.name=TIER1[d.kind]||d.kind==='prv'?nd[1]+' '+n:''; if(d.kind==='prv') d.set=50;
@@ -559,7 +574,7 @@ function buildNet(sys,keep,asb){ const TOL=.45, dist=(a,b)=>Math.hypot(a[0]-b[0]
   for(const L of lines){ const st=[]; let acc=0; for(let i=0;i<L.pts.length;i++){ if(i) acc+=dist(L.pts[i-1],L.pts[i]); st.push({p:L.pts[i],t:acc}); }
     let base=0; for(let i=1;i<L.pts.length;i++){ const a=L.pts[i-1], b=L.pts[i]; for(const c of cand){ const r=ptSeg(c,a,b); if(r.d<=TOL&&dist(r.q,a)>TOL&&dist(r.q,b)>TOL) st.push({p:r.q,t:base+dist(a,r.q)}); } base+=dist(a,b); }
     st.sort((x,y)=>x.t-y.t); const arr=[]; let prev=null;
-    for(const q of st){ const id=idOf(q.p); if(prev&&prev.id===id) continue; if(prev){ const e={line:L.id,a:prev.p,b:q.p,u:prev.id,v:id,len:dist(prev.p,q.p),h:null}; edges.push(e); arr.push(e); cl[prev.id].adj.push(e); cl[id].adj.push(e); } prev={id,p:q.p}; }
+    for(const q of st){ const id=idOf(q.p); if(prev&&prev.id===id) continue; if(prev){ const e={line:L.id,a:prev.p,b:q.p,u:prev.id,v:id,len:dist(prev.p,q.p),h:null,rz:recLine(L)?L:null}; edges.push(e); arr.push(e); cl[prev.id].adj.push(e); cl[id].adj.push(e); } prev={id,p:q.p}; }
     byLine.set(L.id,arr); }
   const at=new Map(); for(const n of nodes){ const id=idOf(n.pts[0]); cl[id].dev.push(n); at.set(n.id,id); }
   return {cl,edges,byLine,at,stats:new Map()}; }
@@ -583,7 +598,8 @@ function solveWater(asb){ const g=buildNet('water',null,asb), n=g.cl.length, h=n
   for(const v of order){ const e=par[v]; if(!e){ hd[v]=h[v]; hdin[v]=h[v]; continue; } const u=e.up, L=LM.get(e.line); e.hf=hfFt(e.q,L?pipeID(L):1,e.len*FT); e.h0=hd[u]; e.h1=hd[u]-e.hf; hdin[v]=e.h1; hd[v]=brkAt(g.cl[v])?h[v]:Math.min(e.h1-(e.q>0?dropOf(g.cl[v]):0),capOf(g.cl[v]))+boost(g.cl[v]); prot[v]=prot[u]||g.cl[v].dev.some(d=>d.kind==='bfp'||d.kind==='rpz'); }
   for(const e of g.edges) if(e.h!=null&&e.up==null){ e.q=0; e.hf=0; e.up=e.u; const m=Math.max(hd[e.u],hd[e.v]); e.h0=e.h1=isFinite(m)?m:e.h; }
   /* where fittings on a pipe have measured heights, the difference from the map's ground is spread along the pipe between them */
-  const corr=g.cl.map(c=>{ for(const d of c.dev) if(hasRel(d)){ const z=nodeElevFt(d), e0=elevAt(d.pts[0]); if(z!=null&&e0!=null) return z-e0*FT; } return null; });
+  const corr=g.cl.map(c=>{ const e0=elevAt(c.p); for(const d of c.dev) if(hasZ(d)){ const z=nodeElevFt(d), e1=elevAt(d.pts[0]); if(z!=null&&e1!=null) return z-e1*FT; }
+    if(e0!=null) for(const e of c.adj) if(e.rz){ const z=lineZAt(e.rz,c.p); if(z!=null) return z-e0*FT; } return null; });
   for(const arr of g.byLine.values()){ if(!arr.length) continue; const st=[{id:arr[0].u,t:0}]; let t=0; for(const e of arr){ t+=e.len; st.push({id:e.v,t}); } const an=st.filter(k=>corr[k.id]!=null); if(!an.length) continue;
     const at=x=>{ if(x<=an[0].t) return corr[an[0].id]; for(let i=1;i<an.length;i++) if(x<=an[i].t){ const a=an[i-1], b=an[i], f=(x-a.t)/((b.t-a.t)||1); return corr[a.id]+f*(corr[b.id]-corr[a.id]); } return corr[an[an.length-1].id]; };
     arr.forEach((e,i)=>{ e.c0=at(st[i].t); e.c1=at(st[i+1].t); }); }
@@ -596,7 +612,7 @@ function solveRuns(sys,asb){ const g=buildNet(sys,sys==='fence'?d=>d.size==='ele
   g.h=h; return g; }
 function getNet(sys,asb){ const k=sys+(asb?'|a':''); if(!net[k]) net[k]=sys==='water'?solveWater(!!asb):solveRuns(sys,!!asb); return net[k]; }
 const psiAt=(h,w)=>{ const e=elevAt(w); return h==null||!isFinite(h)||e==null?null:(h-e*FT)*0.433; };
-const psiE=(e,h,w)=>{ const z=elevAt(w); if(h==null||!isFinite(h)||z==null) return null; const c=e.c0||e.c1?e.c0+(e.c1-e.c0)*(e.len?Math.max(0,Math.min(1,Math.hypot(w[0]-e.a[0],w[1]-e.a[1])/e.len)):0):0; return (h-z*FT-c)*0.433; };
+const psiE=(e,h,w)=>{ if(e.rz&&h!=null&&isFinite(h)){ const zr=lineZAt(e.rz,w); if(zr!=null) return (h-zr)*0.433; } const z=elevAt(w); if(h==null||!isFinite(h)||z==null) return null; const c=e.c0||e.c1?e.c0+(e.c1-e.c0)*(e.len?Math.max(0,Math.min(1,Math.hypot(w[0]-e.a[0],w[1]-e.a[1])/e.len)):0):0; return (h-z*FT-c)*0.433; };
 const psiFlow=(e,w)=>{ if(e.h==null||e.h0==null) return null; const a=e.up===e.u?e.a:e.b, f=e.len?Math.max(0,Math.min(1,Math.hypot(w[0]-a[0],w[1]-a[1])/e.len)):0; return psiE(e,e.h0+(e.h1-e.h0)*f,w); };
 function edgeAt(d,w){ const ed=getNet('water',d.asb).byLine.get(d.id); if(!ed||!ed.length) return null; let best=null, bd=1e9; for(const e of ed){ const r=ptSeg(w,e.a,e.b); if(r.d<bd){ bd=r.d; best=e; } } return best; }
 
@@ -665,7 +681,7 @@ function sysLineRows(add,d){ if(d.sys==='struct') return; if(d.sys==='sewer'){ c
   if(st.qmax>0){ add('Flow, at its busiest point',(+st.qmax.toFixed(1))+' gpm'); add('Velocity there','<span class="chip '+(st.vmax>5?'warn':'ok')+'">'+st.vmax.toFixed(1)+' ft/s</span>'); add('Friction loss along it',st.loss.toFixed(1)+' psi ('+(st.loss/0.433).toFixed(1)+' ft of head)'); if(st.dmin!=null) add('Lowest pressure with water flowing',chip(st.dmin)); }
   if(a!=null) add('Static pressure at start',chip(a)); if(b!=null) add('Static pressure at end',chip(b)); add('Lowest static along the pipe',chip(st.min)); add('Highest static along the pipe',chip(st.max));
   if(raw) return; if(st.len.high>0) add('Length over '+mx+' psi','<span class="chip warn">'+Math.round(st.len.high*FT).toLocaleString()+' ft</span>'); if(st.len.low+st.len.neg>0) add('Length under '+PMIN()+' psi','<span class="chip warn">'+Math.round((st.len.low+st.len.neg)*FT).toLocaleString()+' ft</span>'); if(st.len.none>0) add('Length not connected',Math.round(st.len.none*FT).toLocaleString()+' ft'); }
-function nodeRows(add,d){ const nd=sysNode(d), role=roleOf(d), st=nodeState(d), e=elevAt(d.pts[0]), mx=S.pmax||80, chip=v=>'<span class="chip '+(v>mx||v<PMIN()?'warn':'ok')+'">'+esc(psiText(v))+'</span>'; if(d.sys==='water'&&hasRel(d)&&datumFt(d.asb)!=null) add('Elevation, measured',(+d.rel>0?'+':'')+(+d.rel)+' ft from the tank outlet, about '+Math.round(nodeElevFt(d)).toLocaleString()+' ft'); else if(e!=null) add('Ground elevation, modelled',esc(elevText(d.pts[0]))); else if(elev) add('Ground elevation','<span class="chip warn">No elevation data at this spot</span>');
+function nodeRows(add,d){ const nd=sysNode(d), role=roleOf(d), st=nodeState(d), e=elevAt(d.pts[0]), mx=S.pmax||80, chip=v=>'<span class="chip '+(v>mx||v<PMIN()?'warn':'ok')+'">'+esc(psiText(v))+'</span>'; if(recZ(d)!=null&&!hasRel(d)) add('Elevation, recorded',Math.round(d.zr).toLocaleString()+' ft, from the GPS receiver'+(e!=null?' (the map\u2019s ground model says '+Math.round(e*FT).toLocaleString()+' ft)':'')); else if(d.sys==='water'&&hasRel(d)&&datumFt(d.asb)!=null) add('Elevation, measured',(+d.rel>0?'+':'')+(+d.rel)+' ft from the tank outlet, about '+Math.round(nodeElevFt(d)).toLocaleString()+' ft'); else if(e!=null) add('Ground elevation, modelled',esc(elevText(d.pts[0]))); else if(elev) add('Ground elevation','<span class="chip warn">No elevation data at this spot</span>');
   if(d.sys==='water'&&(d.kind==='weir'||d.kind==='daylight')){ }
   else if(d.sys==='water'&&d.kind==='catch'){ const sp=d.spec||{}, a=+sp.roof||0, ef=+sp.eff>0?+sp.eff:85; if(a>0){ add('Water caught per inch of rain',Math.round(a*0.623*ef/100).toLocaleString()+' gal'); add('Note','Roof area \u00d7 0.623 gal per sq ft per inch \u00d7 '+ef+'%.'); } else add('Note','Enter the roof area to see how much water each inch of rain gives. This marks where the water comes from; it is not part of the pressure calculation.'); }
   else if(d.sys==='water'&&d.kind==='settle'){ const w=tankWL(d); if(w!=null) add('Water surface',Math.round(w).toLocaleString()+' ft'); if(st.on&&isFinite(st.hinFt)&&w!=null&&st.hinFt>w+0.5) add('Supply pressure arriving here',esc(psiText(psiN(st.hinFt,d)))); add('Pressure downstream','Restarts from this water surface'); }
@@ -702,19 +718,33 @@ function sysFields(d,v){ let h=''; if(d.sys==='struct'){ const sp=d.spec||{}, pi
   h+='<label>Status <select id="s_status"'+(d.asb?' disabled title="An as-built record is always existing"':'')+'>'+STATUS.map(o=>'<option value="'+o[0]+'"'+(stOf(d)===o[0]?' selected':'')+'>'+o[1]+'</option>').join('')+'</select></label>';
   if(d.sys!=='struct') h+='<label class="check" style="align-self:end;padding-bottom:6px"><input id="s_asb" type="checkbox"'+(d.asb?' checked':'')+'> As-built record</label>';
   return h; }
-function recTargets(type){ let h='<option value="">Add to the as-built record as…</option>'; for(const sys of SYSK){ const C=SYS[sys], opts=type==='line'?C.lines.map(l=>[l[0],l[1]]):type==='point'?C.nodes.filter(n=>n[3]).map(n=>[n[0],n[1]]):[]; if(opts.length) h+='<optgroup label="'+esc(C.name)+'">'+opts.map(o=>'<option value="'+sys+'|'+esc(o[0])+'">'+esc(o[1])+'</option>').join('')+'</optgroup>'; } return h; }
+function recTargets(type){ let h='<option value="">Add to the as-built record as…</option>'; if(type==='polygon') return h+'<option value="struct|existing">Existing structure</option>'; for(const sys of SYSK){ const C=SYS[sys], opts=type==='line'?C.lines.map(l=>[l[0],l[1]]):type==='point'?C.nodes.filter(n=>n[3]).map(n=>[n[0],n[1]]):[]; if(opts.length) h+='<optgroup label="'+esc(C.name)+'">'+opts.map(o=>'<option value="'+sys+'|'+esc(o[0])+'">'+esc(o[1])+'</option>').join('')+'</optgroup>'; } return h; }
 function renderAsb(){ const pane=$('pane_asb'); if(!pane||pane.hidden) return; const ph=S.show.phase||'both'; pane.querySelectorAll('[data-ph]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.ph===ph));
-  const rows=[]; let n=0; for(const L of S.layers){ if(boundLayers().includes(L)) continue; L.features.forEach((f,i)=>{ if(f.type==='polygon'||n>=150) return; n++; rows.push('<div class="rec"><div>'+esc(f.name||(f.type==='line'?'Line':'Point'))+'<small>'+esc(L.name)+(f.type==='line'?' · '+fmtFt(pathLen(f.coords)):'')+'</small></div><select data-rec="'+L.id+'|'+i+'" aria-label="Add '+esc(f.name||'this item')+' to the as-built record">'+recTargets(f.type)+'</select></div>'); }); }
-  $('reclist').innerHTML=rows.length?rows.join(''):'<p class="hint">Nothing waiting. Open a file recorded with the GPS receiver (KML, KMZ or GeoJSON). Each recorded line and point is listed here for you to say what it is.</p>';
+  const rows=[]; let n=0; for(const L of S.layers){ if(boundLayers().includes(L)) continue; L.features.forEach((f,i)=>{ if(n>=150) return; n++; rows.push('<div class="rec'+(f.type==='point'?' pt':'')+'">'+(f.type==='point'?'<input type="checkbox" data-corner="'+L.id+'|'+i+'" aria-label="Use '+esc(f.name||'this point')+' as a structure corner" title="Tick the corners of one structure, in the order you walked them">':'')+'<div>'+esc(f.name||(f.type==='line'?'Line':f.type==='polygon'?'Shape':'Point'))+'<small>'+esc(L.name)+(f.type==='line'?' · '+fmtFt(pathLen(f.coords)):'')+(f.zs&&f.zs[0]!=null&&f.type==='point'?' · height '+Math.round(f.zs[0]*FT).toLocaleString()+' ft':'')+'</small></div><select data-rec="'+L.id+'|'+i+'" aria-label="Add '+esc(f.name||'this item')+' to the as-built record">'+recTargets(f.type)+'</select></div>'); }); }
+  const corners=S.layers.some(L=>!boundLayers().includes(L)&&L.features.filter(f=>f.type==='point').length>=3);
+  $('reclist').innerHTML=rows.length?rows.join('')+(corners?'<div class="btnrow"><button id="recCorners" disabled>Make a structure from the ticked corners</button></div><p class="hint">Tick three or more points in the order you walked around the structure.</p>':''):'<p class="hint">Nothing waiting. Open a file recorded with the GPS receiver (KML, KMZ or GeoJSON). Each recorded line and point is listed here for you to say what it is.</p>';
   const r=[]; for(const sys of SYSK){ if(sys==='struct') continue; const ds=S.drawings.filter(d=>d.sys===sys&&d.asb), len=ds.filter(d=>d.type==='line').reduce((a,d)=>a+pathLen(d.pts),0), pts=ds.filter(d=>d.type==='node').length; if(ds.length) r.push('<div class="row"><span class="k">'+esc(SYS[sys].name)+'</span><span class="v">'+(len?fmtFt(len):'')+(len&&pts?' · ':'')+(pts?pts+(pts===1?' fitting':' fittings'):'')+'</span></div>'); }
   $('asbsum').innerHTML=r.length?'<div class="stats" style="margin-top:0">'+r.join('')+'</div>':'<p class="hint">Nothing recorded yet. The plan is never changed by what you record here.</p>'; }
 $('phseg').addEventListener('click',e=>{ const b=e.target.closest('[data-ph]'); if(!b) return; S.show.phase=b.dataset.ph; if(sel&&sel.d&&!dvis(selDrawing()||{})) sel=null; renderLayers(); renderSel(); persist(); redraw(); });
 $('recOpen').addEventListener('click',()=>$('file').click());
 $('phchip').addEventListener('click',e=>{ e.stopPropagation(); const o=['both','plan','asb']; S.show.phase=o[(o.indexOf(S.show.phase||'both')+1)%3]; if(sel&&sel.d&&!dvis(selDrawing()||{})) sel=null; renderLayers(); renderSel(); persist(); redraw(); });
 $('reclist').addEventListener('change',e=>{ const t=e.target; if(!t.dataset.rec||!t.value) return; const a=t.dataset.rec.split('|'), L=S.layers.find(l=>l.id===a[0]), f=L&&L.features[+a[1]], b=t.value.split('|'), sys=b[0], key=b.slice(1).join('|'); if(!f||!SYS[sys]) return;
+  if(f.type==='polygon'){ t.value=''; return recStruct(f.coords.map(q=>q.slice()),f.name,f.props,[[L,+a[1]]]); }
   const d=f.type==='line'?{type:'line',sys,size:key,pts:f.coords.map(q=>q.slice()),material:(l=>l&&l[5]!=null?l[5]:SYS[sys].mat)(SYS[sys].lines.find(l=>l[0]===key))}:{type:'node',sys,kind:key,pts:[f.coords[0].slice()]};
+  if(f.zs){ if(d.type==='node'&&f.zs[0]!=null) d.zr=+(f.zs[0]*FT).toFixed(2); else if(d.type==='line'&&f.zs.length===d.pts.length) d.zr=f.zs.map(z=>z==null?null:+(z*FT).toFixed(2)); }
   const SL=sysLayer(sys); if(SL.ro){ t.value=''; return say(ROMSG); } d.id=nid('D'); d.layer=SL.id; d.color=SL.color; d.asb=true; d.status='existing'; d.name=f.name||''; const pr=Object.keys(f.props||{}).map(k=>k+': '+f.props[k]).join('. '); if(pr) d.note=pr.slice(0,300); if(d.kind==='prv') d.set=50;
   S.drawings.push(d); L.features.splice(+a[1],1); if(!L.features.length) S.layers=S.layers.filter(x=>x!==L); if(S.show.phase==='plan') S.show.phase='both'; sel={d:d.id}; renderLayers(); renderSel(); persist(); redraw(); say('Added to the as-built record. The plan is unchanged.'); });
+/* recorded corners or a recorded shape become an existing structure; the recorded items are used up */
+function recStruct(pts,name,props,used){ const SL=sysLayer('struct'); if(SL.ro) return say(ROMSG); if(pts.length<3) return say('A structure needs at least three corners.');
+  const d={type:'poly',sys:'struct',pts,id:nid('D'),layer:SL.id,color:SL.color,status:'existing',name:name||''}; const pr=Object.keys(props||{}).map(k=>k+': '+props[k]).join('. '); if(pr) d.note=pr.slice(0,300);
+  if(!SL.visible) SL.visible=true; if(S.show.hs) delete S.show.hs.existing; net={}; S.drawings.push(d);
+  const byL=new Map(); for(const [L,i] of used){ if(!byL.has(L)) byL.set(L,[]); byL.get(L).push(i); }
+  for(const [L,ix] of byL){ ix.sort((x,y)=>y-x).forEach(i=>L.features.splice(i,1)); } S.layers=S.layers.filter(L=>L.features.length||boundLayers().includes(L));
+  sel={d:d.id}; renderLayers(); renderSel(); renderAsb(); persist(); redraw(); say('Added as an existing structure, '+fmtArea(polyArea(pts))+'. Set its type in the details.'); }
+$('reclist').addEventListener('input',e=>{ if(e.target.dataset&&e.target.dataset.corner!=null){ const n=$('reclist').querySelectorAll('[data-corner]:checked').length, b=$('recCorners'); if(b){ b.disabled=n<3; b.textContent=n>=3?'Make a structure from the '+n+' ticked corners':'Make a structure from the ticked corners'; } } });
+$('reclist').addEventListener('click',e=>{ if(!e.target.closest('#recCorners')) return; const used=[], pts=[];
+  for(const c of $('reclist').querySelectorAll('[data-corner]:checked')){ const a=c.dataset.corner.split('|'), L=S.layers.find(l=>l.id===a[0]), f=L&&L.features[+a[1]]; if(f&&f.type==='point'){ used.push([L,+a[1]]); pts.push(f.coords[0].slice()); } }
+  recStruct(pts,'',{},used); });
 function takeoff(asb){ const g=getNet('water',asb), LM=new Map(S.drawings.map(d=>[d.id,d])), IN={'2 in':2,'1.5 in':1.5,'1 in':1}, nm={2:'2"',1.5:'1½"',1:'1"'}, out=new Map(), add=(k,n)=>out.set(k,(out.get(k)||0)+(n||1));
   const reduce=(a,b)=>{ if(a===2&&b===1.5) add('EF reducing coupling 2"×1½"'); else if(a===2&&b===1) add('EF reducing coupling 2"×1"'); else if(a===1.5&&b===1){ add('EF coupling 1½"'); add('BF reducer 1½"×1"'); add('EF coupling 1"'); } };
   for(const c of g.cl){ const sz=c.adj.map(e=>IN[(LM.get(e.line)||{}).size]).filter(Boolean); if(sz.length<2) continue; const mx=Math.max(...sz);
@@ -1289,7 +1319,9 @@ $('layers').addEventListener('click',e=>{ const t=e.target;
   const r=t.closest('.ul'); if(r&&t.type!=='color'&&S.active!==r.dataset.l) setActive(r.dataset.l); });
 function statRows(){ const d=selDrawing(), r=[]; const add=(k,v)=>r.push('<div class="row"><span class="k">'+esc(k)+'</span><span class="v">'+v+'</span></div>'); { const kc=kindCount(d); if(kc) add('On the map in all',esc(kc)); }
   if(d&&d.type==='measure'&&d.closed){ add('Area',esc(fmtArea(polyArea(d.pts)))); add('Perimeter',esc(fmtBoth(pathLen(d.pts,true)))); shapeElevRows(add,d.pts); }
-  else if(d){ if(d.type==='measure'||d.type==='line'){ add('Total length',esc(fmtBoth(pathLen(d.pts)))); if(d.sys==='water'){ const a=elevText(d.pts[0]), b=elevText(d.pts[d.pts.length-1]); if(a) add('Ground at start, modelled',esc(a)); if(b) add('Ground at end, modelled',esc(b)); } else elevRows(add,d.pts); if(d.sys&&SYS[d.sys]) sysLineRows(add,d); }
+  else if(d){ if(d.type==='measure'||d.type==='line'){ add('Total length',esc(fmtBoth(pathLen(d.pts)))); if(d.sys==='water'){ const zr=recLine(d), za=zr&&typeof zr[0]==='number'?zr[0]:null, zb=zr&&typeof zr[zr.length-1]==='number'?zr[zr.length-1]:null, a=elevText(d.pts[0]), b=elevText(d.pts[d.pts.length-1]);
+      if(za!=null) add('Height at start, recorded',Math.round(za).toLocaleString()+' ft'); else if(a) add('Ground at start, modelled',esc(a)); if(zb!=null) add('Height at end, recorded',Math.round(zb).toLocaleString()+' ft'); else if(b) add('Ground at end, modelled',esc(b));
+      if(zr) add('Pressures along it','Worked out from the heights recorded with the GPS receiver. The side view below is the map’s ground model.'); } else elevRows(add,d.pts); if(d.sys&&SYS[d.sys]) sysLineRows(add,d); }
     else if(d.type==='node') nodeRows(add,d);
     else if(d.type==='point'){ elevRows(add,d.pts); 
       let at=null; for(const L of S.layers) for(const f of L.features) if(f.type==='line'&&!at) for(let j=1;j<f.coords.length;j++) if(ptSeg(d.pts[0],f.coords[j-1],f.coords[j]).d<.3){ at=f.name||L.name; break; }
@@ -1439,9 +1471,13 @@ async function removePhoto(d,id){ d.photos=(d.photos||[]).filter(x=>x!==id); per
 function layerFor(name){ let L=S.layers.find(l=>l.name===name); if(L) return L;
   const kind=/water|pipe|main|irrig|hdpe/i.test(name)?'water':/power|elec|conduit|feeder/i.test(name)?'power':'other';
   L={id:nid('L'),name,kind,color:kind==='water'?'#2f8cff':kind==='power'?'#ff3b30':EXTRA[S.layers.filter(l=>l.kind==='other').length%EXTRA.length],visible:true,features:[]}; S.layers.push(L); return L; }
-function addGeom(L,type,lls,name,props){ const c=lls.filter(q=>isFinite(q[0])&&isFinite(q[1])).map(q=>toXY(q[0],q[1]));
-  if(type==='polygon'&&c.length>3){ const a=c[0],b=c[c.length-1]; if(Math.hypot(a[0]-b[0],a[1]-b[1])<1e-6) c.pop(); }
-  if((type==='point'&&c.length)||(type==='line'&&c.length>1)||(type==='polygon'&&c.length>2)){ L.features.push({type,name:name||'',coords:type==='point'?[c[0]]:c,props:props||{}}); return 1; } return 0; }
+let impSkip=0;
+const skipNote=()=>impSkip?' ('+impSkip+' item'+(impSkip===1?'':'s')+' could not be read)':'';
+function addGeom(L,type,lls,name,props){ const ok=(lls||[]).filter(q=>q&&isFinite(q[0])&&isFinite(q[1])), c=ok.map(q=>toXY(q[0],q[1]));
+  /* heights as recorded, in metres; a height of exactly 0 is how most apps write 'no height' */
+  let zs=ok.map(q=>q.length>2&&isFinite(q[2])&&+q[2]!==0?+q[2]:null);
+  if(type==='polygon'&&c.length>3){ const a=c[0],b=c[c.length-1]; if(Math.hypot(a[0]-b[0],a[1]-b[1])<1e-6){ c.pop(); zs.pop(); } }
+  if((type==='point'&&c.length)||(type==='line'&&c.length>1)||(type==='polygon'&&c.length>2)){ const f={type,name:name||'',coords:type==='point'?[c[0]]:c,props:props||{}}; if(type==='point') zs=zs.slice(0,1); if(zs.some(z=>z!=null)) f.zs=zs; L.features.push(f); return 1; } impSkip++; return 0; }
 function parseKML(text,fallback){ const doc=new DOMParser().parseFromString(text,'text/xml'), fresh=new Set(); let n=0;
   const tags=(el,t)=>[...el.getElementsByTagNameNS('*',t)], first=(el,t)=>{ for(const c of el.children) if(c.localName===t) return c.textContent.trim(); return ''; };
   const coords=el=>el.textContent.trim().split(/\s+/).map(s=>s.split(',').map(Number));
@@ -1451,16 +1487,19 @@ function parseKML(text,fallback){ const doc=new DOMParser().parseFromString(text
     tags(pm,'SimpleData').forEach(d=>{ if(d.textContent.trim()) props[d.getAttribute('name')]=d.textContent.trim(); });
     tags(pm,'Point').forEach(g=>{ const c=tags(g,'coordinates')[0]; if(c){ const q=coords(c); if(q[0]&&q[0].length>2&&isFinite(q[0][2])&&q[0][2]!==0) props['Elevation, m']=q[0][2].toFixed(2); n+=addGeom(L,'point',q,name,props); } });
     tags(pm,'LineString').forEach(g=>{ const c=tags(g,'coordinates')[0]; if(c) n+=addGeom(L,'line',coords(c),name,props); });
-    tags(pm,'Polygon').forEach(g=>{ const o=tags(g,'outerBoundaryIs')[0], c=o&&tags(o,'coordinates')[0]; if(c) n+=addGeom(L,'polygon',coords(c),name,props); }); }
+    tags(pm,'Polygon').forEach(g=>{ const o=tags(g,'outerBoundaryIs')[0], c=o&&tags(o,'coordinates')[0]; if(c) n+=addGeom(L,'polygon',coords(c),name,props); });
+    tags(pm,'Track').forEach(g=>{ n+=addGeom(L,'line',tags(g,'coord').map(c=>c.textContent.trim().split(/\s+/).map(Number)),name,props); });
+    if(!tags(pm,'Point').length&&!tags(pm,'LineString').length&&!tags(pm,'Polygon').length&&!tags(pm,'Track').length) impSkip++; }
   const overlays=[]; for(const ov of tags(doc,'GroundOverlay')){ const b=tags(ov,'LatLonBox')[0], ic=tags(ov,'href')[0]; if(b&&ic){ const g=t=>+((tags(b,t)[0]||{}).textContent||NaN); overlays.push({href:ic.textContent.trim(),n:g('north'),s:g('south'),e:g('east'),w:g('west')}); } }
   return {n,overlays}; }
 function parseGeo(j,fallback){ let n=0; const feats=j.type==='FeatureCollection'?j.features:j.type==='Feature'?[j]:[{type:'Feature',geometry:j,properties:{}}];
-  for(const f of feats||[]){ const g=f.geometry; if(!g) continue; const pr=f.properties||{}, name=pr.name||pr.Name||pr.title||'', props={};
+  for(const f of feats||[]){ const g=f&&f.geometry; if(!g){ impSkip++; continue; } const pr=f.properties||{}, name=pr.name||pr.Name||pr.title||'', props={};
     for(const k in pr){ const v=pr[k]; if(v!=null&&typeof v!=='object'&&k!=='name'&&k!=='Name'&&String(v)!=='') props[k]=String(v); }
     const L=layerFor(pr.layer||fallback), c=g.coordinates;
     if(g.type==='Point') n+=addGeom(L,'point',[c],name,props); else if(g.type==='MultiPoint') c.forEach(q=>n+=addGeom(L,'point',[q],name,props));
     else if(g.type==='LineString') n+=addGeom(L,'line',c,name,props); else if(g.type==='MultiLineString') c.forEach(q=>n+=addGeom(L,'line',q,name,props));
-    else if(g.type==='Polygon') n+=addGeom(L,'polygon',c[0],name,props); else if(g.type==='MultiPolygon') c.forEach(q=>n+=addGeom(L,'polygon',q[0],name,props)); }
+    else if(g.type==='Polygon') n+=addGeom(L,'polygon',c[0],name,props); else if(g.type==='MultiPolygon') c.forEach(q=>n+=addGeom(L,'polygon',q[0],name,props));
+    else if(g.type==='GeometryCollection') (g.geometries||[]).forEach(x=>{ n+=parseGeo({type:'Feature',geometry:x,properties:pr},fallback); }); else impSkip++; }
   return n; }
 function loadDrawings(j){ let n=0; const xy=q=>toXY(q[0],q[1]), meta=j.rbSiteMap||{};
   for(const l of meta.layers||[]) if(l&&l.name&&!S.dl.some(x=>x.name===l.name)){ const L=newLayer(l.name); if(l.color) L.color=l.color; }
@@ -1473,7 +1512,7 @@ function loadDrawings(j){ let n=0; const xy=q=>toXY(q[0],q[1]), meta=j.rbSiteMap
     else if(rb.type==='point'){ d={type:'point',pts:[xy(g.coordinates)]}; if(rb.t) d.t=xy(rb.t); }
     else if(rb.type==='measure') d={type:'measure',pts:g.coordinates.map(xy)};
     else if(rb.type==='node'){ d={type:'node',kind:rb.kind,pts:[xy(g.coordinates)]}; for(const k of ['set','wl','wh','rel','run','closed','feeds','brk','rev','on','gw']) if(rb[k]!=null) d[k]=rb[k]; }
-    if(!d) continue; if(p.sys&&SYS[p.sys]) d.sys=p.sys; if(d.type==='node'&&!d.sys) continue; if(p.cond) d.cond=p.cond; if(p.status) d.status=p.status; if(p.idin) d.idin=p.idin; if(p.asb) d.asb=true; if(p.spec&&typeof p.spec==='object') d.spec=p.spec; if(p.id){ S.drawings=S.drawings.filter(x=>x.id!==p.id); } d.id=p.id||nid('D'); d.name=p.name||''; for(const k of ['note','size','material','depth','date']) if(p[k]) d[k]=p[k]; if(Array.isArray(p.photos)) d.photos=p.photos;
+    if(!d) continue; if(p.sys&&SYS[p.sys]) d.sys=p.sys; if(d.type==='node'&&!d.sys) continue; if(p.cond) d.cond=p.cond; if(p.status) d.status=p.status; if(p.idin) d.idin=p.idin; if(p.asb) d.asb=true; if(p.spec&&typeof p.spec==='object') d.spec=p.spec; if(p.id){ S.drawings=S.drawings.filter(x=>x.id!==p.id); } d.id=p.id||nid('D'); d.name=p.name||''; for(const k of ['note','size','material','depth','date']) if(p[k]) d[k]=p[k]; if(typeof p.zr==='number'||Array.isArray(p.zr)) d.zr=p.zr; if(Array.isArray(p.photos)) d.photos=p.photos;
     if(d.type!=='measure'){ const nm=p.layer||'My drawings'; let L=S.dl.find(l=>l.name===nm); if(!L){ L=newLayer(nm); if(p.layer_color) L.color=p.layer_color; } d.layer=L.id; d.color=p.color||L.color; }
     S.drawings.push(d); n++; } return n; }
 function dropSample(){ if(!S.sample) return; S={origin:null,sample:false,layers:[],dl:[],active:null,drawings:[],clear:S.clear,show:S.show,tank:S.tank,pmax:S.pmax,cint:S.cint}; imgs=[]; elev=null; sel=null; }
@@ -1481,12 +1520,12 @@ function loadUrl(u){ return new Promise((res,rej)=>{ const i=new Image(); i.onlo
 function loadBitmap(blob){ return new Promise((res,rej)=>{ const i=new Image(), u=URL.createObjectURL(blob); i.onload=()=>res(i); i.onerror=()=>{ URL.revokeObjectURL(u); rej(new Error('That image could not be read.')); }; i.src=u; }); }
 function placeImage(bmp,n,s,e,w){ const a=toXY(w,s), b=toXY(e,n); imgs.push({bmp,x0:a[0],y0:a[1],x1:b[0],y1:b[1]}); }
 async function importFiles(files){ const msgs=[]; let did=false, clean=true, gotD=false;
-  for(const f of files){ const ext=(f.name.split('.').pop()||'').toLowerCase(), base=f.name.replace(/\.[^.]+$/,'');
+  for(const f of files){ impSkip=0; const ext=(f.name.split('.').pop()||'').toLowerCase(), base=f.name.replace(/\.[^.]+$/,'');
     try{
       if(/^(jpg|jpeg|png|webp)$/.test(ext)){ pendingImg=await loadBitmap(f); $('boundsBox').hidden=false; $('boundsHint').textContent='"'+f.name+'" is loaded. Enter its edge coordinates in decimal degrees.'; renderEmpty(); $('bn').focus(); msgs.push('Image loaded. Enter its coordinates to place it.'); continue; }
       if(ext==='kmz'){ if(!window.JSZip) throw new Error('The KMZ reader did not load. Unzip the file and import the KML inside it.');
         const zip=await JSZip.loadAsync(await f.arrayBuffer()), k=Object.keys(zip.files).find(n=>/\.kml$/i.test(n)); if(!k) throw new Error('No KML found inside it.');
-        dropSample(); sel=null; const r=parseKML(await zip.file(k).async('string'),base); let t=r.n+' features', got=0;
+        dropSample(); sel=null; const r=parseKML(await zip.file(k).async('string'),base); let t=r.n+' features'+skipNote(), got=0;
         const keep={tiles:[],elev:null};
         if(r.overlays.length){ imgs=[]; for(const o of r.overlays){ const zf=zip.file(o.href); if(!zf||!isFinite(o.n)) continue; say('Loading the aerial image, piece '+(got+1)+' of '+r.overlays.length+'…');
             const bl=new Blob([await zf.async('arraybuffer')],{type:/\.png$/i.test(o.href)?'image/png':'image/jpeg'}); keep.tiles.push({blob:bl,n:o.n,s:o.s,e:o.e,w:o.w});
@@ -1496,13 +1535,17 @@ async function importFiles(files){ const msgs=[]; let did=false, clean=true, got
         if(keep.tiles.length) pendingAerial=keep;
         msgs.push(f.name+': '+t+'.'); did=true; continue; }
       const text=await f.text();
-      if(ext==='kml'){ dropSample(); sel=null; clean=false; msgs.push(f.name+': '+parseKML(text,base).n+' features.'); did=true; continue; }
+      if(ext==='kml'){ dropSample(); sel=null; clean=false; msgs.push(f.name+': '+parseKML(text,base).n+' features'+skipNote()+'.'); did=true; continue; }
       const j=JSON.parse(text);
       if(j.rbSiteMap){ if(!(j.rbSiteMap.sample&&S.sample)) dropSample(); const own=S.drawings.filter(d=>!d.pl).length;
-        if(!S.sample&&own){ const nu=needsFile()?unsaved:0, a=site&&P.conn?'replace':await ask('Open '+f.name,'This map already has '+own+' drawing'+(own===1?'':'s')+' of your own. '+(nu?nu+' change'+(nu===1?' is':'s are')+' not in a file yet, and replacing drops '+(nu===1?'it':'them')+'. ':'')+'Replace shows only what is in the file. Add keeps what is here and brings the file in on top. Undo reverses either one.',[['replace','Replace what is here'],['add','Add to what is here'],['','Cancel']]);
-          if(!a){ msgs.push(f.name+' was not opened.'); continue; } if(a==='replace'){ S.drawings=[]; S.dl=[]; S.active=null; sel=null; if(site){ P.synced={}; syncSave(); } } else clean=false; }
+        if(!S.sample&&own){ const nu=needsFile()?unsaved:0, a=site&&P.conn?await ask('Open '+f.name,'This device is connected to the shared map, so this changes it for everyone. Restore makes the shared map match the file: items changed since it was saved go back to how they were in it, and items added since are removed. Add brings in the file\u2019s items as they are in it and keeps everything else. GitHub keeps every earlier version either way.',[['restore','Restore it for everyone'],['add','Add to what is here'],['','Cancel']]):await ask('Open '+f.name,'This map already has '+own+' drawing'+(own===1?'':'s')+' of your own. '+(nu?nu+' change'+(nu===1?' is':'s are')+' not in a file yet, and replacing drops '+(nu===1?'it':'them')+'. ':'')+'Replace shows only what is in the file. Add keeps what is here and brings the file in on top. Undo reverses either one.',[['replace','Replace what is here'],['add','Add to what is here'],['','Cancel']]);
+          if(!a){ msgs.push(f.name+' was not opened.'); continue; } if(a==='restore'){ if(!(await planFresh())){ msgs.push(f.name+' was not opened, because the shared map could not be reached to restore it. Try again when it can.'); continue; }
+            /* take the shared map as it is now as the starting point, so that every difference from the file counts as this device's change and wins */
+            P.synced={}; for(const n in P.live) P.synced[n]={sha:P.live[n].sha,feats:P.live[n].feats,color:P.live[n].color}; syncSave();
+            S.drawings=S.drawings.filter(d=>!shared(d)); S.dl=[]; S.active=null; sel=null; multi=[]; }
+          else if(a==='replace'){ S.drawings=[]; S.dl=[]; S.active=null; sel=null; if(site){ P.synced={}; syncSave(); } } else clean=false; }
         gotD=true; msgs.push(f.name+': '+loadDrawings(j)+' drawings.'); did=true; continue; }
-      dropSample(); clean=false; msgs.push(f.name+': '+parseGeo(j,base)+' features.'); did=true;
+      dropSample(); clean=false; msgs.push(f.name+': '+parseGeo(j,base)+' features'+skipNote()+'.'); did=true;
     }catch(err){ msgs.push(f.name+' could not be imported. '+(err&&err.message||'')); } }
   S.layers=S.layers.filter(l=>l.features.length);
   if(site&&gotD){ planApply(); renderPlan(); setTimeout(planSync,0); }
@@ -1519,7 +1562,7 @@ $('clearSample').addEventListener('click',()=>{ dropSample(); renderLayers(); re
 /* ---------- save ---------- */
 function drawingsGeoJSON(pick){ const ll=q=>toLL(q[0],q[1]);
   return {type:'FeatureCollection',rbSiteMap:{version:4,sample:S.sample,layers:S.dl.filter(l=>!l.ro).map(l=>({name:l.name,color:l.color})),settings:{tank:S.tank||null,pmax:S.pmax||80,clear:S.clear,post:S.post||10,pmin:PMIN(),flowing:S.flowing!==false,scen:S.scen||[]}},features:S.drawings.filter(pick||(d=>!d.pl)).map(d=>{
-    const pr={name:d.name,kind:{rect:'rectangle',circle:'circle',poly:'polygon',line:'line',point:'label',measure:'measurement'}[d.type]}, L=dlayer(d); if(L){ pr.layer=L.name; pr.layer_color=L.color; } for(const k of ['note','size','material','depth','date']) if(d[k]) pr[k]=d[k]; if(d.photos&&d.photos.length) pr.photos=d.photos; if(d.color) pr.color=d.color; pr.rb={type:d.type}; pr.id=d.id; if(d.sys) pr.sys=d.sys; if(d.cond) pr.cond=d.cond; if(d.status) pr.status=d.status; if(d.spec) pr.spec=d.spec; if(d.idin) pr.idin=d.idin; if(d.asb) pr.asb=true;
+    const pr={name:d.name,kind:{rect:'rectangle',circle:'circle',poly:'polygon',line:'line',point:'label',measure:'measurement'}[d.type]}, L=dlayer(d); if(L){ pr.layer=L.name; pr.layer_color=L.color; } for(const k of ['note','size','material','depth','date']) if(d[k]) pr[k]=d[k]; if(d.zr!=null) pr.zr=d.zr; if(d.photos&&d.photos.length) pr.photos=d.photos; if(d.color) pr.color=d.color; pr.rb={type:d.type}; pr.id=d.id; if(d.sys) pr.sys=d.sys; if(d.cond) pr.cond=d.cond; if(d.status) pr.status=d.status; if(d.spec) pr.spec=d.spec; if(d.idin) pr.idin=d.idin; if(d.asb) pr.asb=true;
     if(d.type==='node'){ pr.rb={type:'node',kind:d.kind}; for(const k of ['set','wl','wh','rel','run','closed','feeds','brk','rev','on','gw']) if(d[k]!=null) pr.rb[k]=d[k]; if(d.asb) pr.asb=true; return {type:'Feature',properties:pr,geometry:{type:'Point',coordinates:ll(d.pts[0])}}; }
     if(d.type==='point'){ if(d.t) pr.rb.t=ll(d.t); return {type:'Feature',properties:pr,geometry:{type:'Point',coordinates:ll(d.pts[0])}}; }
     if(d.type==='measure'||d.type==='line'){ pr.length_ft=+(pathLen(d.pts)*FT).toFixed(2); return {type:'Feature',properties:pr,geometry:{type:'LineString',coordinates:d.pts.map(ll)}}; }
@@ -1537,16 +1580,20 @@ $('exImg').addEventListener('click',async()=>{ const k=3, oc=document.createElem
   finally{ ctx=real; sel=keep[0]; cursor=keep[1]; snap=keep[2]; profMark=keep[3]; exporting=0; dirty=true; }
   const blob=await new Promise(r=>oc.toBlob(r,'image/jpeg',.92)); if(!blob) return say('The picture could not be made.'); await saveFile('rb-site-map.jpg',blob,'Map picture saved. It shows the view that was on screen.'); });
 function kmlText(){ const c=q=>{ const l=toLL(q[0],q[1]); return l[0].toFixed(7)+','+l[1].toFixed(7)+',0'; }, col=h=>(/^#[0-9a-f]{6}$/i.test(h)?h:'#ffffff').replace(/^#(..)(..)(..)$/,'$3$2$1').toLowerCase();
-  const pm=(name,desc,color,geom)=>'<Placemark><name>'+esc(name||'')+'</name>'+(desc?'<description>'+esc(desc)+'</description>':'')+'<Style><LineStyle><color>ff'+col(color)+'</color><width>3</width></LineStyle><PolyStyle><color>55'+col(color)+'</color></PolyStyle></Style>'+geom+'</Placemark>';
+  const pm=(name,desc,color,geom)=>'<Placemark><name>'+esc(name||'')+'</name>'+(desc?'<description>'+esc(desc)+'</description>':'')+'<Style><IconStyle><color>ff'+col(color)+'</color><scale>0.9</scale><Icon><href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon></IconStyle><LabelStyle><scale>0.8</scale></LabelStyle><LineStyle><color>ff'+col(color)+'</color><width>3</width></LineStyle><PolyStyle><color>55'+col(color)+'</color></PolyStyle></Style>'+geom+'</Placemark>';
   const ln=p=>'<LineString><tessellate>1</tessellate><coordinates>'+p.map(c).join(' ')+'</coordinates></LineString>', pg=p=>'<Polygon><outerBoundaryIs><LinearRing><coordinates>'+p.concat([p[0]]).map(c).join(' ')+'</coordinates></LinearRing></outerBoundaryIs></Polygon>', pt=q=>'<Point><coordinates>'+c(q)+'</coordinates></Point>';
   const desc=d=>[d.note,d.size&&'Size: '+d.size,d.material&&'Material: '+d.material,d.depth&&(d.sys==='fence'?'Height: '+d.depth+' ft':'Depth to top: '+d.depth+' in'),d.date&&'Date: '+d.date].filter(Boolean).join('. ');
-  let out='<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>RB Site Map</name>';
-  for(const L of S.dl){ out+='<Folder><name>'+esc(L.name)+'</name>'; for(const d of S.drawings) if(d.layer===L.id) out+=pm(d.name,desc(d),d.color||L.color,d.type==='point'||d.type==='node'?pt(d.pts[0]):d.type==='line'?ln(d.pts):pg(shapePts(d))); out+='</Folder>'; }
-  for(const L of S.layers){ out+='<Folder><name>'+esc(L.name)+'</name>'; for(const f of L.features) out+=pm(f.name,Object.keys(f.props||{}).map(k=>k+': '+f.props[k]).join('. '),L.color,f.type==='point'?pt(f.coords[0]):f.type==='line'?ln(f.coords):pg(f.coords)); out+='</Folder>'; }
+  const ring=d=>{ const r=tankDia(d)/FT/2, o=d.pts[0], p=[]; for(let i=0;i<48;i++) p.push([o[0]+r*Math.cos(i*Math.PI/24),o[1]+r*Math.sin(i*Math.PI/24)]); return p; }, nm=d=>d.name||(d.type==='node'&&SYS[d.sys]?sysNode(d)[1]:'')||(d.type==='line'&&SYS[d.sys]?((SYS[d.sys].lines||[]).find(l=>l[0]===d.size)||[])[1]||d.size||SYS[d.sys].name:'')||'';
+  let out='<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>RB Site Map, '+new Date().toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})+'</name><open>1</open>';
+  for(const L of S.dl){ const ds=S.drawings.filter(d=>d.layer===L.id&&d.type!=='measure'); if(!ds.length) continue; out+='<Folder><name>'+esc(L.name)+'</name>'; for(const d of ds){ const cl=d.color||(d.sys&&SYS[d.sys]?SYS[d.sys].color:L.color); out+=pm(nm(d),desc(d),cl,d.type==='point'||d.type==='node'?pt(d.pts[0]):d.type==='line'?ln(d.pts):pg(shapePts(d))); if(tankDia(d)) out+=pm(nm(d)+' footprint, '+tankDia(d)+' ft across','',cl,pg(ring(d))); } out+='</Folder>'; }
+  for(const L of S.layers){ if(!L.features.length) continue; out+='<Folder><name>'+esc(L.name)+'</name>'; for(const f of L.features) out+=pm(f.name,Object.keys(f.props||{}).map(k=>k+': '+f.props[k]).join('. '),L.color,f.type==='point'?pt(f.coords[0]):f.type==='line'?ln(f.coords):pg(f.coords)); out+='</Folder>'; }
   const ms=S.drawings.filter(d=>d.type==='measure'); if(ms.length){ out+='<Folder><name>Measurements</name>'; for(const d of ms) out+=pm(fmtFt(pathLen(d.pts)),'','#ff5fa2',ln(d.pts)); out+='</Folder>'; }
   return out+'</Document></kml>'; }
-$('exKml').addEventListener('click',async()=>{ if(!S.origin) return say('There is nothing to export yet.'); if(!window.JSZip) return say('The file packer did not load, so this export is not available right now.');
-  const z=new JSZip(); z.file('RB Site Map.kml',kmlText()); const blob=await z.generateAsync({type:'blob',compression:'DEFLATE'}); await saveFile('rb-site-map-google-earth.zip',blob,'Saved. Unzip it, then open the KML file inside with Google Earth.'); });
+async function saveEarth(){ if(!S.origin||!(S.drawings.length||S.layers.length)) return say('There is nothing to save for Google Earth yet.'); if(!window.JSZip) return say('The file packer did not load, so this is not available right now. Reload the page and try again.');
+  const z=new JSZip(), t=new Date(), day=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+  if(dl){ z.file('RB Site Map.kml',kmlText()); await saveFile('rb-site-map-google-earth.zip',await z.generateAsync({type:'blob',compression:'DEFLATE'}),'Saved. Unzip it, then open the KML file inside with Google Earth.'); return; }
+  z.file('doc.kml',kmlText()); const blob=await z.generateAsync({type:'blob',compression:'DEFLATE',mimeType:'application/vnd.google-earth.kmz'}); await saveFile('rb-site-plan-'+day+'.kmz',blob,'Saved rb-site-plan-'+day+'.kmz. Double-click it to open it in Google Earth.'); }
+$('exKml').addEventListener('click',saveEarth); $('gearth').addEventListener('click',saveEarth);
 let chg=0, unsaved=0;
 function needsFile(){ return !S.sample&&!(cloud.on&&!cloud.ro)&&(P.conn?!!P.pend:unsaved>0&&S.drawings.some(d=>!d.pl)); }
 function markSave(){ const n=needsFile(), b=$('savefile'); b.classList.toggle('dirty',n); if(!cloud.on) b.title=n?'Changes not yet in a file. Save puts everything drawn into a file on this device.':'Save the drawings, layers and settings to a file on this device'; if(!S.sample){ try{ localStorage.setItem(KEY+'_uns',String(unsaved)); }catch(_){} } if(!$('savepop').hidden) savePop(); }
@@ -1557,7 +1604,14 @@ function ask(title,text,opts){ return new Promise(res=>{ const w=document.create
 async function saveProject(){ if(!S.drawings.some(d=>!d.pl)&&!S.dl.some(l=>!l.ro)) return say('There is nothing of your own to save yet.'); const t=new Date(), name='rb-site-drawings-'+t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0')+'.json'; if(await saveFile(name,JSON.stringify(drawingsGeoJSON(),null,1),'Saved '+name+'. Use Open file to bring that file back here later.')){ chg=0; unsaved=0; markSave(); } }
 $('savefile').addEventListener('click',saveProject);
 let pt=null;
-function flushLocal(){ clearTimeout(pt); try{ localStorage.setItem(KEY,JSON.stringify({S:Object.assign({},S,{drawings:S.drawings.filter(d=>!d.pl)}),uid})); }catch(_){} }
+let storeFull=false, storeWarned=0;
+/* imported layers (GPS recordings) are by far the largest part of what is kept; positions to the millimetre and heights to the centimetre are plenty */
+const r3=v=>Math.round(v*1000)/1000;
+function compactLayers(){ return S.layers.map(L=>Object.assign({},L,{features:(L.features||[]).map(f=>{ const o=Object.assign({},f,{coords:(f.coords||[]).map(q=>[r3(q[0]),r3(q[1])])}); if(f.zs) o.zs=f.zs.map(z=>z==null?null:Math.round(z*100)/100); return o; })})); }
+function storeState(ok){ if(ok){ if(storeFull){ storeFull=false; setSave(''); say('This device is keeping its own copy of the map again.'); } return; }
+  if(!storeFull){ storeFull=true; setSave(''); }
+  if(Date.now()-storeWarned>120000){ storeWarned=Date.now(); setTimeout(()=>sayAction(site&&P.conn?'This browser\u2019s storage is full. Changes still go to the shared map, but this device can no longer keep its own copy. Remove imported layers you no longer need.':'This browser\u2019s storage is full, so changes are no longer being kept on this device. Save a file now, then remove imported layers you no longer need.','Save a file',saveProject),0); } }
+function flushLocal(){ clearTimeout(pt); try{ localStorage.setItem(KEY,JSON.stringify({S:Object.assign({},S,{drawings:S.drawings.filter(d=>!d.pl),layers:compactLayers()}),uid})); storeState(true); }catch(_){ storeState(false); } }
 function flush(){ flushLocal(); cloudSoon(); }
 let hist={u:[],r:[],cur:null,t:0};
 function snapEntry(){ return {json:JSON.stringify({d:S.drawings.filter(d=>!d.pl),dl:S.dl,a:S.active}),layers:S.layers.slice(),o:S.origin?S.origin.lon+','+S.origin.lat:''}; }
@@ -1587,10 +1641,10 @@ window.addEventListener('pagehide',()=>{ flushLocal(); if(cloud.on&&!cloud.ro&&!
 /* ---------- shared storage: the map's own database and file store ---------- */
 let db=null, pendingAerial=null; const cloud={on:false,ro:false,synced:new Map(),timer:null,busy:false,again:false,aerial:null};
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
-function setSave(t){ markSave(); if(!t&&site&&P.conn) t=P.stat||'Shared map'; const el=$('savest'); el.textContent=t||(S.sample?'Sample site':'This browser only'); el.title=el.textContent+'. Click for saving and exports.'; el.classList.toggle('local',!t||!/^Saved to the map/.test(t)&&!/…$/.test(t)); el.classList.toggle('busy',!!t&&/…$/.test(t)); if(!$('savepop').hidden) savePop(); }
+function setSave(t){ markSave(); if(!t&&site&&P.conn) t=P.stat||'Shared map'; const el=$('savest'); el.textContent=t||(S.sample?'Sample site':'This browser only'); el.title=el.textContent+'. Click for saving and exports.'; el.classList.toggle('local',!t||!/^Saved to the map/.test(t)&&!/…$/.test(t)); el.classList.toggle('busy',!!t&&/…$/.test(t)); el.classList.toggle('warn',storeFull); if(storeFull){ el.textContent='Device storage full'; el.title='This browser\u2019s storage is full, so this device is not keeping its own copy. Click for details.'; } if(!$('savepop').hidden) savePop(); }
 function savePop(){ const L=[], tm=d=>d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}), ae=cloud.aerial&&Array.isArray(cloud.aerial.tiles)&&cloud.aerial.tiles.length?cloud.aerial:null;
-  const due=site&&P.conn?(P.pend?'<div class="due"><b>Not on the shared map yet</b><span>The latest changes are still being saved. Keep the page open for a few seconds.</span></div>':''):needsFile()?'<div class="due"><b>Not yet in a file</b><span>'+unsaved+' change'+(unsaved===1?'':'s')+' since the last saved file, kept in this browser only until you press Save.</span></div>':'';
-  if(site){ L.push(P.conn?['The shared map','Everything drawn here saves itself to the shared map a few seconds after each change. Everyone connected works on the same map and sees changes within about a minute.']:['Your drawings','Kept in this browser on this device, so they are still here next time you open the page on it. Nobody else sees them.']); L.push(['To keep or pass on a copy','Save puts everything you have drawn into one file on this device. Open file brings that file back, here or on another device.']); L.push(P.conn?['Measurements and settings','These stay on this device only.']:['Sharing','This device is not connected to the shared map. The Sharing tab connects it.']); L.push(['The base map','The aerial image, property boundary and ground elevations load with the page and cannot be changed from here.']); $('saveInfo').innerHTML=due+L.map(x=>'<div><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>').join(''); return; }
+  const due=(storeFull?'<div class="due"><b>This device is not keeping a copy</b><span>The browser\u2019s storage is full. '+(site&&P.conn?'Changes still go to the shared map. ':'Press Save to put your work in a file. ')+'Removing imported layers you no longer need frees space.</span></div>':'')+(site&&P.conn?(P.pend?'<div class="due"><b>Not on the shared map yet</b><span>The latest changes are still being saved. Keep the page open for a few seconds.</span></div>':''):needsFile()&&!storeFull?'<div class="due"><b>Not yet in a file</b><span>'+unsaved+' change'+(unsaved===1?'':'s')+' since the last saved file, kept in this browser only until you press Save.</span></div>':'');
+  if(site){ L.push(P.conn?['The shared map','Everything drawn here saves itself to the shared map a few seconds after each change. Everyone connected works on the same map and sees changes within about a minute.']:['Your drawings',storeFull?'Normally kept in this browser on this device, but its storage is full, so recent changes are not being kept. Nobody else sees them.':'Kept in this browser on this device, so they are still here next time you open the page on it. Nobody else sees them.']); L.push(['To keep or pass on a copy','Save puts everything you have drawn into one file on this device. Open file brings that file back, here or on another device.']); L.push(P.conn?['Measurements and settings','These stay on this device only.']:['Sharing','This device is not connected to the shared map. The Sharing tab connects it.']); L.push(['The base map','The aerial image, property boundary and ground elevations load with the page and cannot be changed from here.']); $('saveInfo').innerHTML=due+L.map(x=>'<div><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>').join(''); return; }
   if(S.sample) L.push(['Sample site','Nothing here is yours yet. The sample, and anything drawn on it, stays in this browser only. Import your own files to start the real map.']);
   else { L.push(['Drawings, layers and settings',cloud.on&&!cloud.ro?'Saved to the map'+(cloud.last?', last at '+tm(cloud.last):'')+'. They load on any device that opens this map.':cloud.on?'This is a view-only copy. Changes made here stay in this browser and are not saved to the map.':'Saved in this browser only. The map\'s own storage is not available in this view, so other devices will not see them.']);
     L.push(['Aerial image and ground elevations',ae?'Stored with the map in '+ae.tiles.length+' pieces'+(ae.elev?', with the elevations':'')+'. They load by themselves.':imgs.length?'Loaded for this visit only. Import the map file again next time.':'None loaded yet.']);
@@ -1666,7 +1720,7 @@ const planLayer=()=>null, planOwner=()=>'', planTag=()=>'', planNote=()=>'', dra
 const sameName=(a,b)=>!!String(a||'').trim()&&String(a||'').trim().toLowerCase()===String(b||'').trim().toLowerCase();
 const ptime=s=>{ const d=new Date(s); if(!s||isNaN(d)) return ''; const t=d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}); return d.toDateString()===new Date().toDateString()?'today at '+t:d.toLocaleDateString(undefined,{day:'numeric',month:'short'})+' at '+t; };
 const slug=s=>String(s||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'layer';
-const lsGet=(k,d)=>{ try{ const v=JSON.parse(localStorage.getItem(KEY+k)||'null'); return v==null?d:v; }catch(_){ return d; } }, lsSet=(k,v)=>{ try{ if(v==null) localStorage.removeItem(KEY+k); else localStorage.setItem(KEY+k,JSON.stringify(v)); }catch(_){} };
+const lsGet=(k,d)=>{ try{ const v=JSON.parse(localStorage.getItem(KEY+k)||'null'); return v==null?d:v; }catch(_){ return d; } }, lsSet=(k,v)=>{ try{ if(v==null) localStorage.removeItem(KEY+k); else localStorage.setItem(KEY+k,JSON.stringify(v)); }catch(_){ storeState(false); } };
 const syncSave=()=>lsSet('_sync',P.synced);
 const shared=d=>d.type!=='measure'&&!d.temp;
 /* features to drawings without touching the map, by borrowing the normal file reader */
@@ -1722,7 +1776,9 @@ async function planSync(){ if(!P.conn||!site) return; if(P.busy){ P.again=true; 
     syncSave(); P.err=''; P.first=false; if(P.rev===r0&&!conflict) P.pend=false; planStat(P.pend?'Saving…':'Saved to the map');
   }catch(e){ P.err=errText(e); planStat(e.status===0?'Offline. Changes stay on this device.':'Not saved. Open the Sharing tab.'); }
   if(incoming.length||tidy){ net={}; ensureLayers(); const ae=document.activeElement, typing=!!(ae&&/^(INPUT|SELECT)$/.test(ae.tagName)&&$('sel').contains(ae)&&selDrawing()); if(sel&&sel.d&&!selDrawing()) sel=null; multi=multi.filter(id=>S.drawings.some(d=>d.id===id)); hist={u:[],r:[],cur:snapEntry(),t:0}; flushLocal(); renderLayers(); if(!typing) renderSel(); redraw(); } if(incoming.length){ if(!P.quiet) say('Updated from the shared map: '+incoming.join(', ')+'.'); }
-  P.quiet=false; P.busy=false; markSave(); if(!$('pane_plan').hidden&&planIdle()) renderPlan(); if(P.again||conflict||(P.pend&&!P.err)){ clearTimeout(P.timer); P.timer=setTimeout(planSync,conflict?800:2500); } }
+  P.quiet=false; P.busy=false; markSave(); if(!$('pane_plan').hidden&&planIdle()) renderPlan(); if(P.again||conflict||P.pend){ clearTimeout(P.timer); P.timer=setTimeout(planSync,conflict?800:P.err?20000:2500); } }
+/* bring this device fully up to date with the shared map before acting on it; false if it could not be reached */
+async function planFresh(){ for(let i=0;P.busy&&i<100;i++) await wait(300); P.err=''; await planSync(); for(let i=0;P.busy&&i<100;i++) await wait(300); return !P.err&&!P.busy; }
 function planTouch(){ P.rev++; if(!P.conn) return; P.pend=true; clearTimeout(P.timer); P.timer=setTimeout(planSync,4000); if(P.stat!=='Saving…'&&!P.err) planStat('Saving…'); }
 function planApply(){ planTouch(); }
 function planParse(t){ t=String(t||'').trim(); const m=t.match(/join=([A-Za-z0-9_\-+\/=.]+)/); let c=(m?m[1]:t).replace(/\s+/g,'').replace(/^rbmap1\./,'').replace(/-/g,'+').replace(/_/g,'/'); try{ const j=JSON.parse(atob(c)); if(j&&j.r&&j.t) return Object.assign({repo:j.r,token:j.t},j.a?{api:j.a}:{}); }catch(_){} return null; }
@@ -1789,7 +1845,8 @@ async function siteStart(){ let m=null; try{ const r=await fetch('data/site.json
   $('tab_plan').hidden=false; planBoot();
   ensureLayers(); hist={u:[],r:[],cur:snapEntry(),t:0}; syncInputs(); renderLayers(); renderSel(); fit(); unboot();
   await loadAerial({site:true,tiles:m.tiles.map(t=>Object.assign({},t,{url:'data/'+t.file})),elev:m.elev?Object.assign({},m.elev,{url:'data/'+m.elev.file}):null}); fit(); flushLocal();
-  if(had&&!P.conn&&!/join=/.test(location.hash)) sayAction('Picked up the drawings last worked on in this browser.','Start clean',()=>{ S.drawings=[]; S.dl=[]; S.active=null; sel=null; P.synced={}; syncSave(); planApply(); renderLayers(); renderSel(); persist(); redraw(); planSync(); });
+  let seen=false; try{ seen=sessionStorage.getItem(KEY+'_picked')==='1'; sessionStorage.setItem(KEY+'_picked','1'); }catch(_){}
+  if(had&&!P.conn&&!seen&&!/join=/.test(location.hash)) sayAction('Picked up the drawings last worked on in this browser.','Start clean',()=>{ S.drawings=[]; S.dl=[]; S.active=null; sel=null; P.synced={}; syncSave(); planApply(); renderLayers(); renderSel(); persist(); redraw(); planSync(); });
   return true; }
 function unboot(){ const st=cv.closest('.stage'); if(st.classList.contains('boot')){ st.classList.remove('boot'); redraw(); } }
 function start(){
