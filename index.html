@@ -81,6 +81,7 @@ kbd{font:500 10.5px var(--mono);opacity:.6;margin-left:4px}
 .reclist{display:flex;flex-direction:column;gap:6px}
 .rec{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:8px;align-items:center;font-size:13px}
 .rec.pt{grid-template-columns:auto minmax(0,1fr) 150px}
+.recph{display:flex;gap:8px;align-items:center;font-size:13px;margin-bottom:4px}
 .rec.pt input{margin:0}
 .rec small{display:block;color:var(--muted);font-family:var(--mono);font-size:11px}
 .seg{display:flex}
@@ -284,7 +285,7 @@ button.ib:hover{color:var(--ink);border-color:transparent;background:var(--tint)
     <button id="imp" class="primary" title="Open a saved drawings file, a map file or recorded lines"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 12.5v-9h4l1.5 2h5.5v7z"/></svg><span class="tx">Open file</span></button>
     <button id="savefile" title="Save the drawings, layers and settings to a file on this device"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v8M4.5 7L8 10.5 11.5 7M2.5 13.5h11"/></svg><span class="tx">Save</span></button>
     <button id="gearth" title="Save everything drawn as one file that opens in Google Earth with a double-click"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.6"/><path d="M2.4 8h11.2M8 2.4c2.2 2 2.2 9.2 0 11.2M8 2.4c-2.2 2-2.2 9.2 0 11.2"/></svg><span class="tx">Google Earth</span></button>
-    <input id="file" type="file" multiple hidden accept=".kml,.kmz,.json,.geojson,.jpg,.jpeg,.png,.webp">
+    <input id="file" type="file" multiple hidden accept=".kml,.kmz,.zip,.json,.geojson,.jpg,.jpeg,.png,.webp">
   </div>
   <button id="setbtn" class="ico" aria-haspopup="dialog" aria-expanded="false" aria-label="Settings" title="Settings: go to coordinates, date filter, clearance distance"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h6M11.5 4.5h2M2.5 11.5h2M7.5 11.5h6"/><circle cx="10" cy="4.5" r="1.6"/><circle cx="6" cy="11.5" r="1.6"/></svg></button>
   <button id="savest" class="local" aria-haspopup="dialog" aria-expanded="false" title="Saving and exports"></button>
@@ -329,7 +330,7 @@ button.ib:hover{color:var(--ink);border-color:transparent;background:var(--tint)
         <ol>
           <li>Open the aerial map file<span>The KMZ holds the stitched aerial image, the property boundary and ground elevations.</span></li>
           <li>Add a layer for each kind of thing<span>Water lines, power lines, existing structures, future structures.</span></li>
-          <li>Draw, or import recorded lines<span>KML, KMZ or GeoJSON exports from the GPS receiver land as their own layers.</span></li>
+          <li>Draw, or import recorded lines<span>KML, KMZ or GeoJSON exports from the GPS receiver, or the zip SW Maps exports, land as their own layers.</span></li>
         </ol>
         <button id="emptyImp" class="primary">Open files</button>
       </div>
@@ -344,7 +345,7 @@ button.ib:hover{color:var(--ink);border-color:transparent;background:var(--tint)
         </div>
         <div id="draftBtns" hidden><button id="finish" class="primary">Finish</button><button id="cancel">Cancel</button></div>
       </div>
-    <div class="foot"><span id="coord">Move the pointer over the map</span><span id="zoomtxt"></span><span id="ver" title="Version of this tool">Build 29 · 25 Nov 2026</span></div>
+    <div class="foot"><span id="coord">Move the pointer over the map</span><span id="zoomtxt"></span><span id="ver" title="Version of this tool">Build 31 · 26 Nov 2026</span></div>
   </div>
 
   <div class="side" id="side">
@@ -547,7 +548,8 @@ const drawLayer=()=>preset?sysLayer(preset.sys):activeLayer();
 const TL=()=>{ let m=0; for(const d of S.drawings) if(d.type==='node'&&d.sys==='water'&&feeds(d)){ const w=tankWL(d); if(w>m) m=w; } return m||S.tank||0; };
 function tankWL(d){ if(d.wl!=null&&d.wl!==''&&isFinite(+d.wl)) return +d.wl; const e=recZ(d)!=null?d.zr/FT:elevAt(d.pts[0]); return e==null?null:e*FT+(d.wh!=null&&d.wh!==''&&isFinite(+d.wh)?+d.wh:8); }
 /* the zero for measured heights: the ground at the main feeding tank, taken as its outlet */
-function datumFt(asb){ const t=S.drawings.find(d=>d.type==='node'&&d.sys==='water'&&d.kind==='tank'&&!!d.asb===!!asb&&feeds(d))||S.drawings.find(d=>d.type==='node'&&d.sys==='water'&&d.kind==='tank'&&feeds(d)); if(!t) return null; if(recZ(t)!=null) return t.zr; const e=elevAt(t.pts[0]); return e==null?null:e*FT; }
+function datumFt(asb){ if(REFPT&&isFinite(+REFPT.h)) return +REFPT.h*FT; const t=S.drawings.find(d=>d.type==='node'&&d.sys==='water'&&d.kind==='tank'&&!!d.asb===!!asb&&feeds(d))||S.drawings.find(d=>d.type==='node'&&d.sys==='water'&&d.kind==='tank'&&feeds(d)); if(!t) return null; if(recZ(t)!=null) return t.zr; const e=elevAt(t.pts[0]); return e==null?null:e*FT; }
+const refWord=()=>REFPT&&isFinite(+REFPT.h)?'reference point':'tank outlet';
 const hasRel=d=>d.rel!=null&&d.rel!==''&&isFinite(+d.rel);
 /* a height recorded with the GPS receiver, in feet above sea level: one number for a fitting, one per corner for a line */
 const recZ=d=>d&&typeof d.zr==='number'&&isFinite(d.zr)?d.zr:null;
@@ -682,7 +684,7 @@ function sysLineRows(add,d){ if(d.sys==='struct') return; if(d.sys==='sewer'){ c
   if(st.qmax>0){ add('Flow, at its busiest point',(+st.qmax.toFixed(1))+' gpm'); add('Velocity there','<span class="chip '+(st.vmax>5?'warn':'ok')+'">'+st.vmax.toFixed(1)+' ft/s</span>'); add('Friction loss along it',st.loss.toFixed(1)+' psi ('+(st.loss/0.433).toFixed(1)+' ft of head)'); if(st.dmin!=null) add('Lowest pressure with water flowing',chip(st.dmin)); }
   if(a!=null) add('Static pressure at start',chip(a)); if(b!=null) add('Static pressure at end',chip(b)); add('Lowest static along the pipe',chip(st.min)); add('Highest static along the pipe',chip(st.max));
   if(raw) return; if(st.len.high>0) add('Length over '+mx+' psi','<span class="chip warn">'+Math.round(st.len.high*FT).toLocaleString()+' ft</span>'); if(st.len.low+st.len.neg>0) add('Length under '+PMIN()+' psi','<span class="chip warn">'+Math.round((st.len.low+st.len.neg)*FT).toLocaleString()+' ft</span>'); if(st.len.none>0) add('Length not connected',Math.round(st.len.none*FT).toLocaleString()+' ft'); }
-function nodeRows(add,d){ const nd=sysNode(d), role=roleOf(d), st=nodeState(d), e=elevAt(d.pts[0]), mx=S.pmax||80, chip=v=>'<span class="chip '+(v>mx||v<PMIN()?'warn':'ok')+'">'+esc(psiText(v))+'</span>'; if(recZ(d)!=null&&!hasRel(d)) add('Elevation, recorded',Math.round(d.zr).toLocaleString()+' ft, from the GPS receiver'+(e!=null?' (the map\u2019s ground model says '+Math.round(e*FT).toLocaleString()+' ft)':'')); else if(d.sys==='water'&&hasRel(d)&&datumFt(d.asb)!=null) add('Elevation, measured',(+d.rel>0?'+':'')+(+d.rel)+' ft from the tank outlet, about '+Math.round(nodeElevFt(d)).toLocaleString()+' ft'); else if(e!=null) add('Ground elevation, modelled',esc(elevText(d.pts[0]))); else if(elev) add('Ground elevation','<span class="chip warn">No elevation data at this spot</span>');
+function nodeRows(add,d){ const nd=sysNode(d), role=roleOf(d), st=nodeState(d), e=elevAt(d.pts[0]), mx=S.pmax||80, chip=v=>'<span class="chip '+(v>mx||v<PMIN()?'warn':'ok')+'">'+esc(psiText(v))+'</span>'; if(recZ(d)!=null&&!hasRel(d)) add('Elevation, recorded',Math.round(d.zr).toLocaleString()+' ft, from the GPS receiver'+(e!=null?' (the map\u2019s ground model says '+Math.round(e*FT).toLocaleString()+' ft)':'')); else if(d.sys==='water'&&hasRel(d)&&datumFt(d.asb)!=null) add('Elevation, measured',(+d.rel>0?'+':'')+(+d.rel)+' ft from the '+refWord()+', about '+Math.round(nodeElevFt(d)).toLocaleString()+' ft'); else if(e!=null) add('Ground elevation, modelled',esc(elevText(d.pts[0]))); else if(elev) add('Ground elevation','<span class="chip warn">No elevation data at this spot</span>');
   if(d.sys==='water'&&(d.kind==='weir'||d.kind==='daylight')){ }
   else if(d.sys==='water'&&d.kind==='catch'){ const sp=d.spec||{}, a=+sp.roof||0, ef=+sp.eff>0?+sp.eff:85; if(a>0){ add('Water caught per inch of rain',Math.round(a*0.623*ef/100).toLocaleString()+' gal'); add('Note','Roof area \u00d7 0.623 gal per sq ft per inch \u00d7 '+ef+'%.'); } else add('Note','Enter the roof area to see how much water each inch of rain gives. This marks where the water comes from; it is not part of the pressure calculation.'); }
   else if(d.sys==='water'&&d.kind==='settle'){ const w=tankWL(d); if(w!=null) add('Water surface',Math.round(w).toLocaleString()+' ft'); if(st.on&&isFinite(st.hinFt)&&w!=null&&st.hinFt>w+0.5) add('Supply pressure arriving here',esc(psiText(psiN(st.hinFt,d)))); add('Pressure downstream','Restarts from this water surface'); }
@@ -723,7 +725,8 @@ function recTargets(type){ let h='<option value="">Add to the as-built record as
 function renderAsb(){ const pane=$('pane_asb'); if(!pane||pane.hidden) return; const ph=S.show.phase||'both'; pane.querySelectorAll('[data-ph]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.ph===ph));
   const rows=[]; let n=0; for(const L of S.layers){ if(boundLayers().includes(L)) continue; L.features.forEach((f,i)=>{ if(n>=150) return; n++; rows.push('<div class="rec'+(f.type==='point'?' pt':'')+'">'+(f.type==='point'?'<input type="checkbox" data-corner="'+L.id+'|'+i+'" aria-label="Use '+esc(f.name||'this point')+' as a structure corner" title="Tick the corners of one structure, in the order you walked them">':'')+'<div>'+esc(f.name||(f.type==='line'?'Line':f.type==='polygon'?'Shape':'Point'))+'<small>'+esc(L.name)+(f.type==='line'?' · '+fmtFt(pathLen(f.coords)):'')+(f.zs&&f.zs[0]!=null&&f.type==='point'?' · height '+Math.round(f.zs[0]*FT).toLocaleString()+' ft':'')+'</small></div><select data-rec="'+L.id+'|'+i+'" aria-label="Add '+esc(f.name||'this item')+' to the as-built record">'+recTargets(f.type)+'</select></div>'); }); }
   const corners=S.layers.some(L=>!boundLayers().includes(L)&&L.features.filter(f=>f.type==='point').length>=3);
-  $('reclist').innerHTML=rows.length?rows.join('')+(corners?'<div class="btnrow"><button id="recCorners" disabled>Make a structure from the ticked corners</button></div><p class="hint">Tick three or more points in the order you walked around the structure.</p>':''):'<p class="hint">Nothing waiting. Open a file recorded with the GPS receiver (KML, KMZ or GeoJSON). Each recorded line and point is listed here for you to say what it is.</p>';
+  const ph0=$('recPhase')?$('recPhase').value:'asb';
+  $('reclist').innerHTML=rows.length?'<label class="recph">Add as <select id="recPhase"><option value="asb">As-built record</option><option value="plan"'+(ph0==='plan'?' selected':'')+'>Plan</option></select></label>'+rows.join('')+(corners?'<div class="btnrow"><button id="recCorners" disabled>Make a structure from the ticked corners</button></div><p class="hint">Tick three or more points in the order you walked around the structure.</p>':''):'<p class="hint">Nothing waiting. Open a file recorded with the GPS receiver (the zip SW Maps exports, or KML, KMZ or GeoJSON). Each recorded line and point is listed here for you to say what it is.</p>';
   const r=[]; for(const sys of SYSK){ if(sys==='struct') continue; const ds=S.drawings.filter(d=>d.sys===sys&&d.asb), len=ds.filter(d=>d.type==='line').reduce((a,d)=>a+pathLen(d.pts),0), pts=ds.filter(d=>d.type==='node').length; if(ds.length) r.push('<div class="row"><span class="k">'+esc(SYS[sys].name)+'</span><span class="v">'+(len?fmtFt(len):'')+(len&&pts?' · ':'')+(pts?pts+(pts===1?' fitting':' fittings'):'')+'</span></div>'); }
   $('asbsum').innerHTML=r.length?'<div class="stats" style="margin-top:0">'+r.join('')+'</div>':'<p class="hint">Nothing recorded yet. The plan is never changed by what you record here.</p>'; }
 $('phseg').addEventListener('click',e=>{ const b=e.target.closest('[data-ph]'); if(!b) return; S.show.phase=b.dataset.ph; if(sel&&sel.d&&!dvis(selDrawing()||{})) sel=null; renderLayers(); renderSel(); persist(); redraw(); });
@@ -733,11 +736,11 @@ $('reclist').addEventListener('change',e=>{ const t=e.target; if(!t.dataset.rec|
   if(f.type==='polygon'){ t.value=''; return recStruct(f.coords.map(q=>q.slice()),f.name,f.props,[[L,+a[1]]]); }
   const d=f.type==='line'?{type:'line',sys,size:key,pts:f.coords.map(q=>q.slice()),material:(l=>l&&l[5]!=null?l[5]:SYS[sys].mat)(SYS[sys].lines.find(l=>l[0]===key))}:{type:'node',sys,kind:key,pts:[f.coords[0].slice()]};
   if(f.zs){ if(d.type==='node'&&f.zs[0]!=null) d.zr=+(f.zs[0]*FT).toFixed(2); else if(d.type==='line'&&f.zs.length===d.pts.length) d.zr=f.zs.map(z=>z==null?null:+(z*FT).toFixed(2)); }
-  const SL=sysLayer(sys); if(SL.ro){ t.value=''; return say(ROMSG); } d.id=nid('D'); d.layer=SL.id; d.color=SL.color; d.asb=true; d.status='existing'; d.name=f.name||''; const pr=Object.keys(f.props||{}).map(k=>k+': '+f.props[k]).join('. '); if(pr) d.note=pr.slice(0,300); if(d.kind==='prv') d.set=50;
-  S.drawings.push(d); L.features.splice(+a[1],1); if(!L.features.length) S.layers=S.layers.filter(x=>x!==L); if(S.show.phase==='plan') S.show.phase='both'; sel={d:d.id}; renderLayers(); renderSel(); persist(); redraw(); say('Added to the as-built record. The plan is unchanged.'); });
+  const SL=sysLayer(sys); if(SL.ro){ t.value=''; return say(ROMSG); } d.id=nid('D'); d.layer=SL.id; d.color=SL.color; const asPlan=$('recPhase')&&$('recPhase').value==='plan'; if(asPlan){ d.status='planned'; delete d.zr; } else { d.asb=true; d.status='existing'; } d.name=f.name||''; const pr=Object.keys(f.props||{}).map(k=>k+': '+f.props[k]).join('. '); if(pr) d.note=pr.slice(0,300); if(d.kind==='prv') d.set=50;
+  S.drawings.push(d); L.features.splice(+a[1],1); if(!L.features.length) S.layers=S.layers.filter(x=>x!==L); if(S.show.phase==='plan') S.show.phase='both'; sel={d:d.id}; renderLayers(); renderSel(); persist(); redraw(); say(asPlan?'Added to the plan.':'Added to the as-built record. The plan is unchanged.'); });
 /* recorded corners or a recorded shape become an existing structure; the recorded items are used up */
 function recStruct(pts,name,props,used){ const SL=sysLayer('struct'); if(SL.ro) return say(ROMSG); if(pts.length<3) return say('A structure needs at least three corners.');
-  const d={type:'poly',sys:'struct',pts,id:nid('D'),layer:SL.id,color:SL.color,status:'existing',name:name||''}; const pr=Object.keys(props||{}).map(k=>k+': '+props[k]).join('. '); if(pr) d.note=pr.slice(0,300);
+  const d={type:'poly',sys:'struct',pts,id:nid('D'),layer:SL.id,color:SL.color,status:$('recPhase')&&$('recPhase').value==='plan'?'planned':'existing',name:name||''}; const pr=Object.keys(props||{}).map(k=>k+': '+props[k]).join('. '); if(pr) d.note=pr.slice(0,300);
   if(!SL.visible) SL.visible=true; if(S.show.hs) delete S.show.hs.existing; net={}; S.drawings.push(d);
   const byL=new Map(); for(const [L,i] of used){ if(!byL.has(L)) byL.set(L,[]); byL.get(L).push(i); }
   for(const [L,ix] of byL){ ix.sort((x,y)=>y-x).forEach(i=>L.features.splice(i,1)); } S.layers=S.layers.filter(L=>L.features.length||boundLayers().includes(L));
@@ -1353,7 +1356,7 @@ function renderSel(){ net={}; if(!selDrawing()) renderSys(); if(S.drawings.some(
       if(d.type==='circle') h+='<label class="wide">Radius, ft <input id="s_r" type="number" min="0.5" step="0.5" value="'+(d.r*FT).toFixed(1)+'"></label>';
       if(d.type==='line'&&d.sys&&SYS[d.sys]&&d.sys!=='struct') h+='<label>'+(d.sys==='fence'?'Wire or mesh':'Material')+' <input id="s_mat" type="text" value="'+v(d.material)+'"></label>'+(d.sys==='fence'?'<label>Height, ft <input id="s_depth" type="text" inputmode="decimal" value="'+v(d.depth)+'"></label>':d.size==='oh'?'':'<label>Depth to the top, in <input id="s_depth" type="text" inputmode="decimal" value="'+v(d.depth)+'"></label>');
       h+='</div><details class="more" id="selMore"'+(moreOpen?' open':'')+' style="margin-top:10px"><summary>More</summary><div class="fields">';
-      h+=(d.sys?'':'<label>Layer <select id="s_layer">'+S.dl.filter(l=>(!isSysLayer(l)&&!l.ro)||l.id===d.layer).map(l=>'<option value="'+l.id+'"'+(l.id===d.layer?' selected':'')+'>'+esc(l.name)+'</option>').join('')+'</select></label>')+'<label>Date installed or recorded <input id="s_date" type="date" value="'+v(d.date)+'"></label>'+(d.type==='line'&&d.sys==='water'?'<label>Inside diameter, in <input id="s_idin" type="number" step="any" min="0" placeholder="'+(PIPE_ID[d.size]||'')+'" value="'+v(d.idin)+'"></label>':'')+(d.type==='node'&&d.sys==='water'&&roleOf(d)!=='tank'&&!RAWK[d.kind]&&d.kind!=='catch'?'<label class="wide">Height measured from the tank outlet, ft <input id="s_rel" type="number" step="any" placeholder="blank uses the map; below the outlet is negative" value="'+v(d.rel)+'"></label>':'');
+      h+=(d.sys?'':'<label>Layer <select id="s_layer">'+S.dl.filter(l=>(!isSysLayer(l)&&!l.ro)||l.id===d.layer).map(l=>'<option value="'+l.id+'"'+(l.id===d.layer?' selected':'')+'>'+esc(l.name)+'</option>').join('')+'</select></label>')+'<label>Date installed or recorded <input id="s_date" type="date" value="'+v(d.date)+'"></label>'+(d.type==='line'&&d.sys==='water'?'<label>Inside diameter, in <input id="s_idin" type="number" step="any" min="0" placeholder="'+(PIPE_ID[d.size]||'')+'" value="'+v(d.idin)+'"></label>':'')+(d.type==='node'&&d.sys==='water'&&roleOf(d)!=='tank'&&!RAWK[d.kind]&&d.kind!=='catch'?'<label class="wide">Height measured from the '+refWord()+', ft <input id="s_rel" type="number" step="any" placeholder="blank uses the map; below it is negative" value="'+v(d.rel)+'"></label>':'');
       h+='<label class="wide">Note <input id="s_note" type="text" value="'+v(d.note)+'"></label>';
       if(!d.sys) h+='<label>Colour <input id="s_color" type="color" value="'+(/^#[0-9a-f]{6}$/i.test(d.color||'')?d.color:'#ffffff')+'" style="height:32px;padding:2px"></label>'; if(S.origin&&(d.type==='node'||d.type==='point')){ const ll=toLL(d.pts[0][0],d.pts[0][1]); h+='<p class="hint wide" style="font-family:var(--mono);font-size:12px">'+ll[1].toFixed(7)+', '+ll[0].toFixed(7)+'</p>'; } h+='</div>';
       if((d.photos&&d.photos.length)||assetsCap) h+='<div class="photos">'+(d.photos||[]).map(id=>'<span class="ph"><img src="/_blob/'+esc(id)+'" alt="Photo attached to '+v(d.name)+'" data-ph="'+esc(id)+'" loading="lazy">'+(assetsCap?'<button data-phx="'+esc(id)+'" aria-label="Remove this photo">×</button>':'')+'</span>').join('')+'</div>'+(assetsCap?'<div class="btnrow"><button id="s_addph">Add photo</button><input id="s_phfile" type="file" accept="image/*" hidden></div>':''); h+='</details>'; }
@@ -1473,6 +1476,30 @@ function layerFor(name){ let L=S.layers.find(l=>l.name===name); if(L) return L;
   const kind=/water|pipe|main|irrig|hdpe/i.test(name)?'water':/power|elec|conduit|feeder/i.test(name)?'power':'other';
   L={id:nid('L'),name,kind,color:kind==='water'?'#2f8cff':kind==='power'?'#ff3b30':EXTRA[S.layers.filter(l=>l.kind==='other').length%EXTRA.length],visible:true,features:[]}; S.layers.push(L); return L; }
 let impSkip=0;
+/* The reference point. Every recorded file should hold points named REF (REF start, REF end) taken on it.
+   On import, the file is moved by the difference between those readings and the reference's stored position and height,
+   so every session lines up with every other, whatever the day's corrections or pole height did.
+   Without a reference, or without REF points in the file, positions are kept as recorded and heights are left out. */
+let REFPT=null;
+const isRefName=n=>/^\s*ref\b/i.test(n||'');
+function refAlign(before){ const fresh=[], refs=[];
+  for(const L of S.layers) for(const f of L.features) if(!before.has(f)) (f.type==='point'&&isRefName(f.name)?refs:fresh).push([L,f]);
+  const dropZ=()=>{ for(const [,f] of fresh) delete f.zs; };
+  if(!REFPT){ if(refs.length){ dropZ(); for(const [,f] of refs) delete f.zs; return ' Its REF points are kept as plain points, because the reference point is not set up yet; heights are left out.'; } dropZ(); return fresh.length?' Heights are left out until the reference point is set up.':''; }
+  for(const [L,f] of refs){ L.features.splice(L.features.indexOf(f),1); }
+  S.layers=S.layers.filter(L=>L.features.length||boundLayers().includes(L));
+  if(!refs.length){ dropZ(); return fresh.length?' No REF point in this file, so it is not checked against the reference point: positions are as recorded and heights are left out.':''; }
+  const R=toXY(REFPT.lon,REFPT.lat), pts=refs.map(([,f])=>({x:f.coords[0][0],y:f.coords[0][1],z:f.zs&&f.zs[0]!=null?f.zs[0]:null}));
+  const mx=pts.reduce((a,p)=>a+p.x,0)/pts.length, my=pts.reduce((a,p)=>a+p.y,0)/pts.length, zz=pts.filter(p=>p.z!=null), mz=zz.length?zz.reduce((a,p)=>a+p.z,0)/zz.length:null;
+  const dx=R[0]-mx, dy=R[1]-my, dz=mz!=null&&isFinite(+REFPT.h)?+REFPT.h-mz:null;
+  let spread=0, vspread=0; for(const p of pts){ spread=Math.max(spread,Math.hypot(p.x-mx,p.y-my)); if(p.z!=null&&mz!=null) vspread=Math.max(vspread,Math.abs(p.z-mz)); }
+  for(const [,f] of fresh){ f.coords=f.coords.map(q=>[q[0]+dx,q[1]+dy]); if(f.zs) f.zs=dz==null?undefined:f.zs.map(z=>z==null?null:z+dz); if(!f.zs) delete f.zs; }
+  const cm=v=>Math.round(v*100), off=Math.hypot(dx,dy);
+  let t=' Checked against the reference point ('+refs.length+' REF reading'+(refs.length===1?'':'s')+'): moved '+cm(off)+' cm sideways'+(dz!=null?' and '+(dz>=0?'up ':'down ')+Math.abs(dz).toFixed(2)+' m in height':', heights left out because the REF readings have none')+'.';
+  if(spread>0.05||vspread>0.08) t+=' Warning: the REF readings disagree by up to '+cm(spread)+' cm sideways and '+cm(vspread)+' cm in height. Something changed during the session (pole height, a lost fix, the coin disturbed). Check before assigning anything from this file.';
+  else if(off>0.15) t+=' Note: that is a large shift. Check the mountpoint is AUTO and the pole height is right.';
+  return t; }
+function snapFeats(){ const s0=new Set(); for(const L of S.layers) for(const f of L.features) s0.add(f); return s0; }
 const skipNote=()=>impSkip?' ('+impSkip+' item'+(impSkip===1?'':'s')+' could not be read)':'';
 function addGeom(L,type,lls,name,props){ const ok=(lls||[]).filter(q=>q&&isFinite(q[0])&&isFinite(q[1])), c=ok.map(q=>toXY(q[0],q[1]));
   /* heights as recorded, in metres; a height of exactly 0 is how most apps write 'no height' */
@@ -1493,9 +1520,11 @@ function parseKML(text,fallback){ const doc=new DOMParser().parseFromString(text
     if(!tags(pm,'Point').length&&!tags(pm,'LineString').length&&!tags(pm,'Polygon').length&&!tags(pm,'Track').length) impSkip++; }
   const overlays=[]; for(const ov of tags(doc,'GroundOverlay')){ const b=tags(ov,'LatLonBox')[0], ic=tags(ov,'href')[0]; if(b&&ic){ const g=t=>+((tags(b,t)[0]||{}).textContent||NaN); overlays.push({href:ic.textContent.trim(),n:g('north'),s:g('south'),e:g('east'),w:g('west')}); } }
   return {n,overlays}; }
+/* where a feature's name can be: the usual keys first, then the NAME and REMARKS that SW Maps writes */
+const NAMEKEYS=['name','Name','NAME','title','Title','REMARKS','Remarks','remarks'];
 function parseGeo(j,fallback){ let n=0; const feats=j.type==='FeatureCollection'?j.features:j.type==='Feature'?[j]:[{type:'Feature',geometry:j,properties:{}}];
-  for(const f of feats||[]){ const g=f&&f.geometry; if(!g){ impSkip++; continue; } const pr=f.properties||{}, name=pr.name||pr.Name||pr.title||'', props={};
-    for(const k in pr){ const v=pr[k]; if(v!=null&&typeof v!=='object'&&k!=='name'&&k!=='Name'&&String(v)!=='') props[k]=String(v); }
+  for(const f of feats||[]){ const g=f&&f.geometry; if(!g){ impSkip++; continue; } const pr=f.properties||{}, nk=NAMEKEYS.find(k=>pr[k]!=null&&typeof pr[k]!=='object'&&String(pr[k]).trim()!==''), name=nk?String(pr[nk]).trim():'', props={};
+    for(const k in pr){ const v=pr[k]; if(v!=null&&typeof v!=='object'&&k!==nk&&k!=='name'&&k!=='Name'&&String(v).trim()!==''&&!(/^(AREA|LENGTH)$/.test(k)&&+v===0)) props[k]=String(v); }
     const L=layerFor(pr.layer||fallback), c=g.coordinates;
     if(g.type==='Point') n+=addGeom(L,'point',[c],name,props); else if(g.type==='MultiPoint') c.forEach(q=>n+=addGeom(L,'point',[q],name,props));
     else if(g.type==='LineString') n+=addGeom(L,'line',c,name,props); else if(g.type==='MultiLineString') c.forEach(q=>n+=addGeom(L,'line',q,name,props));
@@ -1526,7 +1555,7 @@ async function importFiles(files){ const msgs=[]; let did=false, clean=true, got
       if(/^(jpg|jpeg|png|webp)$/.test(ext)){ pendingImg=await loadBitmap(f); $('boundsBox').hidden=false; $('boundsHint').textContent='"'+f.name+'" is loaded. Enter its edge coordinates in decimal degrees.'; renderEmpty(); $('bn').focus(); msgs.push('Image loaded. Enter its coordinates to place it.'); continue; }
       if(ext==='kmz'){ if(!window.JSZip) throw new Error('The KMZ reader did not load. Unzip the file and import the KML inside it.');
         const zip=await JSZip.loadAsync(await f.arrayBuffer()), k=Object.keys(zip.files).find(n=>/\.kml$/i.test(n)); if(!k) throw new Error('No KML found inside it.');
-        dropSample(); sel=null; const r=parseKML(await zip.file(k).async('string'),base); let t=r.n+' features'+skipNote(), got=0;
+        dropSample(); sel=null; const before=snapFeats(); const r=parseKML(await zip.file(k).async('string'),base); const aligned=refAlign(before); let t=r.n+' features'+skipNote(), got=0;
         const keep={tiles:[],elev:null};
         if(r.overlays.length){ imgs=[]; for(const o of r.overlays){ const zf=zip.file(o.href); if(!zf||!isFinite(o.n)) continue; say('Loading the aerial image, piece '+(got+1)+' of '+r.overlays.length+'…');
             const bl=new Blob([await zf.async('arraybuffer')],{type:/\.png$/i.test(o.href)?'image/png':'image/jpeg'}); keep.tiles.push({blob:bl,n:o.n,s:o.s,e:o.e,w:o.w});
@@ -1534,9 +1563,15 @@ async function importFiles(files){ const msgs=[]; let did=false, clean=true, got
           t+=got?' and the aerial image':' (its aerial image could not be read)'; }
         const ez=zip.file('files/elevation.json'); if(ez){ try{ const ej=JSON.parse(await ez.async('string')); if(setElev(ej)){ t+=', plus ground elevations'; keep.elev=ej; } }catch(_){ t+=' (its elevation data could not be read)'; } }
         if(keep.tiles.length) pendingAerial=keep;
-        msgs.push(f.name+': '+t+'.'); did=true; continue; }
+        msgs.push(f.name+': '+t+'.'+aligned); did=true; continue; }
+      if(ext==='zip'){ if(!window.JSZip) throw new Error('The zip reader did not load. Reload the page and try again.');
+        const zip=await JSZip.loadAsync(await f.arrayBuffer()), ks=Object.keys(zip.files).filter(k=>!zip.files[k].dir&&/\.(geo)?json$/i.test(k)&&!/(^|\/)(__MACOSX\/|\._)/.test(k)&&!/_(TRACKS|PHOTOS)\.(geo)?json$/i.test(k));
+        if(!ks.length) throw new Error('There are no GeoJSON files inside it.');
+        dropSample(); sel=null; clean=false; const before=snapFeats(); let n=0;
+        for(const k of ks){ let j; try{ j=JSON.parse(await zip.file(k).async('string')); }catch(_){ impSkip++; continue; } if(!j||j.rbSiteMap){ impSkip++; continue; } n+=parseGeo(j,base+' · '+k.split('/').pop().replace(/\.[^.]+$/,'')); }
+        msgs.push(f.name+': '+n+' features'+skipNote()+'.'+refAlign(before)); did=true; continue; }
       const text=await f.text();
-      if(ext==='kml'){ dropSample(); sel=null; clean=false; msgs.push(f.name+': '+parseKML(text,base).n+' features'+skipNote()+'.'); did=true; continue; }
+      if(ext==='kml'){ dropSample(); sel=null; clean=false; { const before=snapFeats(), n=parseKML(text,base).n; msgs.push(f.name+': '+n+' features'+skipNote()+'.'+refAlign(before)); } did=true; continue; }
       const j=JSON.parse(text);
       if(j.rbSiteMap){ if(!(j.rbSiteMap.sample&&S.sample)) dropSample(); const own=S.drawings.filter(d=>!d.pl).length;
         if(!S.sample&&own){ const nu=needsFile()?unsaved:0, a=site&&P.conn?await ask('Open '+f.name,'This device is connected to the shared map, so this changes it for everyone. Restore makes the shared map match the file: items changed since it was saved go back to how they were in it, and items added since are removed. Add brings in the file\u2019s items as they are in it and keeps everything else. GitHub keeps every earlier version either way.',[['restore','Restore it for everyone'],['add','Add to what is here'],['','Cancel']]):await ask('Open '+f.name,'This map already has '+own+' drawing'+(own===1?'':'s')+' of your own. '+(nu?nu+' change'+(nu===1?' is':'s are')+' not in a file yet, and replacing drops '+(nu===1?'it':'them')+'. ':'')+'Replace shows only what is in the file. Add keeps what is here and brings the file in on top. Undo reverses either one.',[['replace','Replace what is here'],['add','Add to what is here'],['','Cancel']]);
@@ -1546,7 +1581,7 @@ async function importFiles(files){ const msgs=[]; let did=false, clean=true, got
             S.drawings=S.drawings.filter(d=>!shared(d)); S.dl=[]; S.active=null; sel=null; multi=[]; }
           else if(a==='replace'){ S.drawings=[]; S.dl=[]; S.active=null; sel=null; if(site){ P.synced={}; syncSave(); } } else clean=false; }
         gotD=true; msgs.push(f.name+': '+loadDrawings(j)+' drawings.'); did=true; continue; }
-      dropSample(); clean=false; msgs.push(f.name+': '+parseGeo(j,base)+' features'+skipNote()+'.'); did=true;
+      dropSample(); clean=false; { const before=snapFeats(), n=parseGeo(j,base); msgs.push(f.name+': '+n+' features'+skipNote()+'.'+refAlign(before)); } did=true;
     }catch(err){ msgs.push(f.name+' could not be imported. '+(err&&err.message||'')); } }
   S.layers=S.layers.filter(l=>l.features.length);
   if(site&&gotD){ planApply(); renderPlan(); setTimeout(planSync,0); }
@@ -1842,7 +1877,7 @@ $('locate').addEventListener('click',()=>{ const b=$('locate'); if(hereW!=null){
 function sayAction(t,label,fn){ say(t); const b=document.createElement('button'); b.textContent=label; b.addEventListener('click',()=>{ say(''); fn(); }); $('status').appendChild(b); clearTimeout(sayT); sayT=setTimeout(()=>{ $('status').hidden=true; },20000); }
 async function siteStart(){ let m=null; try{ const r=await fetch('data/site.json',{cache:'no-cache'}); if(r.ok) m=await r.json(); }catch(_){} if(!m||!Array.isArray(m.tiles)) return false; site=m; $('locate').hidden=!navigator.geolocation;
   const had=!S.sample&&S.drawings.length; if(S.sample) dropSample(); if(!S.origin&&m.origin) S.origin=m.origin;
-  const pb=boundLayers(), bv=pb.length>0&&pb.some(l=>l.visible); S.layers=S.layers.filter(l=>!pb.includes(l)); if(m.boundary){ try{ parseGeo(await (await fetch('data/'+m.boundary)).json(),'Property boundary'); }catch(_){} } boundLayers().forEach(l=>{ l.visible=bv; });
+  const pb=boundLayers(), bv=pb.length>0&&pb.some(l=>l.visible); S.layers=S.layers.filter(l=>!pb.includes(l)); if(m.boundary){ try{ parseGeo(await (await fetch('data/'+m.boundary)).json(),'Property boundary'); if(m.reference&&isFinite(+m.reference.lat)&&isFinite(+m.reference.lon)){ REFPT=m.reference; addGeom(layerFor('Property boundary'),'point',[[+m.reference.lon,+m.reference.lat]],'Reference point: '+(m.reference.name||'coin'),{'Height on the map, ft':isFinite(+m.reference.h)?(+m.reference.h*FT).toFixed(2):'not set'}); } }catch(_){} } boundLayers().forEach(l=>{ l.visible=bv; });
   $('tab_plan').hidden=false; planBoot();
   ensureLayers(); hist={u:[],r:[],cur:snapEntry(),t:0}; syncInputs(); renderLayers(); renderSel(); fit(); unboot();
   await loadAerial({site:true,tiles:m.tiles.map(t=>Object.assign({},t,{url:'data/'+t.file})),elev:m.elev?Object.assign({},m.elev,{url:'data/'+m.elev.file}):null}); fit(); flushLocal(); imgCheck(m.imagery);
